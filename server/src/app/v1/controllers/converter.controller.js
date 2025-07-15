@@ -26,15 +26,19 @@ const ignorableFiles = ["node_modules","__pycache__","vendor","venv",".exe","pyv
 // const prompt = `You are a specialized AI model designed for converting source code from one programming language or framework to another. 'Your Task': Convert the provided code files from a specified source language/framework ('[SOURCE_LANGUAGE/FRAMEWORK]') to a specified target language/framework ('[TARGET_LANGUAGE/FRAMEWORK]'). 'Input': You will receive input representing one or more code files. Each input will consist of a 'filename' and its 'content'. The overall input structure will represent a collection of these files. 'Required Parameters': You **must** know the original source language/framework and the desired target language/framework. These will be provided explicitly as: *   'SOURCE_LANG': '[SOURCE_LANGUAGE/FRAMEWORK]' *   'TARGET_LANG': '[TARGET_LANGUAGE/FRAMEWORK]' 'Conversion Logic': 1.  Analyze the provided code content for each file. 2.  Understand the code's logic, structure, and functionality in the 'SOURCE_LANG'. 3.  Re-implement the equivalent logic, structure, and functionality in the 'TARGET_LANG'. 4.  Translate syntax, keywords, standard library calls, and common patterns appropriately for the 'TARGET_LANG'. 5.  Maintain the original intent and behavior of the code as closely as possible. 6.  Preserve comments where relevant and translate them if necessary/possible. 7.  Handle common language features and standard libraries. If specific, complex libraries or frameworks are used, attempt to find equivalents or provide comments indicating where manual adaptation might be needed. 'Output Format': Your output **must** be a single JSON object. *   The keys of the JSON object must be the original 'filename's from the input. *   The value associated with each 'filename' key must be a string containing the *converted code content* for that file in the 'TARGET_LANG'. *   **IMPORTANT:** JSON requires keys and string values to be enclosed in **double quotes (")**. Adhere strictly to standard JSON formatting for the output. 'Strict Instructions': *   Generate **only** the JSON object. Do not include any introductory text, explanations, conversational remarks, or markdown formatting (like triple backticks json ) outside the JSON object itself. *   Ensure the JSON is valid and correctly formatted using **double quotes (")** for keys and string values. *   If a file cannot be converted (e.g., due to extreme complexity, ambiguity, or unsupported features), include the filename in the JSON but provide an informative error message or placeholder content as the value for that file (e.g., '"filename": "// Error: Conversion failed due to [reason]"') rather than attempting a partial or incorrect conversion. You need to generate a JSON object that contains file names along with their paths prefixed with '<suitble application name that resembles the behaviour of the code>/' as keys and their content which is [TARGET_LANGUAGE/FRAMEWORK] equivalant code as values. Every framework has its own dependency file like package.json for node.js and requirements.txt for python related frameworks etc., So strictly add dependency file for every conversion.`
 
 
-const prompt = `You are a specialized AI model designed for converting source code from one programming language or framework to another. 'Your Task': Convert the provided code files from a specified source language/framework ('[SOURCE_LANGUAGE/FRAMEWORK]') to a specified target language/framework ('[TARGET_LANGUAGE/FRAMEWORK]'). 'Input': You will receive input representing one or more code files. Each input will consist of a 'filename' and its 'content'. The overall input structure will represent a collection of these files. 'Required Parameters': You **must** know the original source language/framework and the desired target language/framework. These will be provided explicitly as: *   'SOURCE_LANG': '[SOURCE_LANGUAGE/FRAMEWORK]' *   'TARGET_LANG': '[TARGET_LANGUAGE/FRAMEWORK]' 'Conversion Logic': 1.  Before attempting conversion, filter the input files. **Exclude files residing within directories commonly used for dependency installation, build outputs, or runtime caches** (e.g., 'node_modules', '__pycache__', 'vendor', 'bin', 'obj', '.m2', 'dist', 'build'). Focus conversion only on the remaining source code files that represent the project's core logic. 2.  Analyze the code content for each *filtered* source file. 3.  Understand the code's logic, structure, and functionality in the 'SOURCE_LANG'. 4.  Re-implement the equivalent logic, structure, and functionality in the 'TARGET_LANG'. 5.  Translate syntax, keywords, standard library calls, and common patterns appropriately for the 'TARGET_LANG'. 6.  Maintain the original intent and behavior of the code as closely as possible. 7.  Preserve comments where relevant and translate them if necessary/possible. 8.  Handle common language features and standard libraries. If specific, complex libraries or frameworks are used, attempt to find equivalents or provide comments indicating where manual adaptation might be needed. 9.  **Identify necessary external dependencies** required by the converted 'TARGET_LANG' code and the '[TARGET_LANGUAGE/FRAMEWORK]'. 10. **Determine the standard dependency management file name** for the '[TARGET_LANGUAGE/FRAMEWORK]' (e.g., 'package.json' for Node.js, 'requirements.txt' for Python, 'Gemfile' for Ruby, 'pom.xml' or 'build.gradle' for Java, 'composer.json' for PHP, '.csproj' for .NET, 'go.mod' for Go). Also make sure to not write comments in this dependency management file. 11. **Generate the content for this dependency management file** based on the identified dependencies. 12. If the user input code is not in [SOURCE_LANGUAGE/FRAMEWORK] framework, then don't convert the code and generate an output in this format : {success : false, message : 'Source language mismatch : The provided code is in <framework used in code> and input framework is [SOURCE_LANGUAGE/FRAMEWORK].'} 13. Also the generate the stages of code conversion explaining how you are converting containing 4-5 stages. 14. While generating functions in javascript, don't wrap multiline strings with single or double quotes. Instead use single backticks. Otherwise it leads to errors. 'Output Format': Your output **must** be a single JSON object. *   The keys of the JSON object must be the original 'filename's from the input. *   The value associated with each 'filename' key must be a string containing the *converted code content* for that file in the 'TARGET_LANG'. *   Prefix the key for *every* file in the output JSON (both converted code files and the dependency file) with the chosen application name followed by a forward slash '/'. *   **IMPORTANT:** JSON requires keys and string values to be enclosed in **double quotes (")**. Adhere strictly to standard JSON formatting for the output. 'Strict Instructions': *   Generate **only** the JSON object. Do not include any introductory text, explanations, conversational remarks, or markdown formatting (like triple backticks) outside the JSON object itself. *   Ensure the JSON is valid and correctly formatted using **double quotes (")** for keys and string values. *   If a file cannot be converted (e.g., due to extreme complexity, ambiguity, or unsupported features), include the filename in the JSON but provide an informative error message or placeholder content as the value for that file (e.g., '"filename": "// Error: Conversion failed due to [reason]"') rather than attempting a partial or incorrect conversion.`
+const CONVERSION_PROMPT = `You are a specialized AI model designed for converting source code from one programming language or framework to another. 'Your Task': Convert the provided code files from a specified source language/framework ('[SOURCE_LANGUAGE/FRAMEWORK]') to a specified target language/framework ('[TARGET_LANGUAGE/FRAMEWORK]'). 'Input': You will receive input representing one or more code files. Each input will consist of a 'filename' and its 'content'. The overall input structure will represent a collection of these files. 'Required Parameters': You **must** know the original source language/framework and the desired target language/framework. These will be provided explicitly as: *   'SOURCE_LANG': '[SOURCE_LANGUAGE/FRAMEWORK]' *   'TARGET_LANG': '[TARGET_LANGUAGE/FRAMEWORK]' 'Conversion Logic': 1.  Before attempting conversion, filter the input files. **Exclude files residing within directories commonly used for dependency installation, build outputs, or runtime caches** (e.g., 'node_modules', '__pycache__', 'vendor', 'bin', 'obj', '.m2', 'dist', 'build'). Focus conversion only on the remaining source code files that represent the project's core logic. 2.  Analyze the code content for each *filtered* source file. 3.  Understand the code's logic, structure, and functionality in the 'SOURCE_LANG'. 4.  Re-implement the equivalent logic, structure, and functionality in the 'TARGET_LANG'. 5.  Translate syntax, keywords, standard library calls, and common patterns appropriately for the 'TARGET_LANG'. 6.  Maintain the original intent and behavior of the code as closely as possible. 7.  Preserve comments where relevant and translate them if necessary/possible. 8.  Handle common language features and standard libraries. If specific, complex libraries or frameworks are used, attempt to find equivalents or provide comments indicating where manual adaptation might be needed. 9.  **Identify necessary external dependencies** required by the converted 'TARGET_LANG' code and the '[TARGET_LANGUAGE/FRAMEWORK]'. 10. **Determine the standard dependency management file name** for the '[TARGET_LANGUAGE/FRAMEWORK]' (e.g., 'package.json' for Node.js, 'requirements.txt' for Python, 'Gemfile' for Ruby, 'pom.xml' or 'build.gradle' for Java, 'composer.json' for PHP, '.csproj' for .NET, 'go.mod' for Go). Also make sure to not write comments in this dependency management file. 11. **Generate the content for this dependency management file** based on the identified dependencies. 12. If the user input code is not in [SOURCE_LANGUAGE/FRAMEWORK] framework, then don't convert the code and generate an output in this format : {success : false, message : 'Source language mismatch : The provided code is in <framework used in code> and input framework is [SOURCE_LANGUAGE/FRAMEWORK].'} 13. Also the generate the stages of code conversion explaining how you are converting containing 4-5 stages. 14. While generating functions in javascript, don't wrap multiline strings with single or double quotes. Instead use single backticks. Otherwise it leads to errors. 15. Provide the complete and exact file and directory structure of the generated application. Include all necessary empty placeholder files (e.g., __init__.py for Python packages, index.js for some Node.js modules) to ensure correct package recognition. 16. Above all, the generated code must be directly runnable and free of common startup errors. 'Output Format': Your output **must** be a single JSON object. *   The keys of the JSON object must be the original 'filename's from the input. *   The value associated with each 'filename' key must be a string containing the *converted code content* for that file in the 'TARGET_LANG'. *   Prefix the key for *every* file in the output JSON (both converted code files and the dependency file) with the chosen application name followed by a forward slash '/'. * 17.Use relative import whenever possible and avoid absolute paths.   **IMPORTANT:** JSON requires keys and string values to be enclosed in **double quotes (")**. Adhere strictly to standard JSON formatting for the output. 'Strict Instructions': *   Generate **only** the JSON object. Do not include any introductory text, explanations, conversational remarks, or markdown formatting (like triple backticks) outside the JSON object itself. *   Ensure the JSON is valid and correctly formatted using **double quotes (")** for keys and string values. *   If a file cannot be converted (e.g., due to extreme complexity, ambiguity, or unsupported features), include the filename in the JSON but provide an informative error message or placeholder content as the value for that file (e.g., '"filename": "// Error: Conversion failed due to [reason]"') rather than attempting a partial or incorrect conversion. `
+
+const VALIDATION_PROMPT = `You are an application validator assistant that carefully analyse the application code for potential bugs like dependency mismatches, import issues like using absolute import instead of relative imports wherever necessary etc., You will be given a converted [TARGET_LANGUAGE/FRAMEWORK] applicaion code that is originally in [SOURCE_LANGUAGE/FRAMEWORK]. Gather all the possible fixes and carefully refactor the code where it needs refactoring maintaing overall module structure. Return the same format as the user input format. `
+
+const UPDATION_PROMPT = `you are an application debugger/modifier whose sole purpose is to analyse the given error or changes in file contents where the error occurs or changes needed. After analysing the file code generate the issue parts of the code and return the modified files in the same json format without changing the file names and paths. Only changing in the file code wherever there is need to change the code. Also generate the summary of the changes done. Here are the files details you have: [FILES].`
 
 // const model = azure(config.AZURE_OPENAI_DEPLOYMENT);
 const model = createGoogleGenerativeAI({
   apiKey : config.GEMINI_API_KEY
 });
 
-// const model_version = "models/gemini-1.5-pro";
-const model_version = "models/gemini-2.5-flash-preview-04-17";
+const model_version = "models/gemini-2.5-pro";
+// const model_version = "models/gemini-2.5-flash-preview-05-20";
 // const model_version = "models/gemini-2.0-flash"
 
 // Set up multer for handling file uploads
@@ -58,10 +62,14 @@ export async function extractZip(req,res) {
       const entries = fs.readdirSync(dir, { withFileTypes: true });
       for (const entry of entries) {
         const fullPath = path.join(dir, entry.name);
+        let ignorableFilesFound = new Set();
         for(const ignorableFile of ignorableFiles){
           if(fullPath.includes(ignorableFile)){
-            throw {msg : "Please ensure to remove Dependency Installation Directories, Build Artifacts, Runtime Caches or Generated Files for successful coversion."}
+            ignorableFilesFound.add(ignorableFile);
           }
+        }
+        if(ignorableFilesFound.size > 0){
+          throw {msg : "Please ensure to remove Dependency Installation Directories, Build Artifacts, Runtime Caches or Generated Files for successful coversion.\r\nFound : " + Array.from(ignorableFilesFound).join(", ")}
         }
         if (entry.isDirectory()) {
           findJsFiles(fullPath);
@@ -108,7 +116,7 @@ export async function convertCode(req, res) {
         messages : [
           {
             role : "system",
-            content : prompt.replace("[TARGET_LANGUAGE/FRAMEWORK]",targetLanguage).replace("[SOURCE_LANGUAGE/FRAMEWORK]",sourceLanguage)
+            content : CONVERSION_PROMPT.replace("[TARGET_LANGUAGE/FRAMEWORK]",targetLanguage).replace("[SOURCE_LANGUAGE/FRAMEWORK]",sourceLanguage)
           },
           {
             role : "user",
@@ -118,8 +126,8 @@ export async function convertCode(req, res) {
         schema : z.object({
             success : z.boolean().describe("Contains true or false confirming whether conversion is success or failure."),
             files : z.array(z.object({
-                fileName: z.string(),
-                filePath: z.string().describe("just relative path. No need to put absolute path"),
+                fileName: z.string().describe("Name of the file without any path. Just the file name"),
+                filePath: z.string().describe("entire path including the application name. No need to put absolute path"),
                 content: z.string(),
             })),
             message : z.string().describe("Error message if concersion is not successful"),
@@ -134,7 +142,9 @@ export async function convertCode(req, res) {
       throw {msg : result.object.message};
     }
 
-    res.status(200).json({message: "Conversion successful",files : result.object.files,stages:result.object.stages});
+    const validatedFiles = await getValidatedCode(sourceLanguage,targetLanguage,result.object.files)
+
+    res.status(200).json({message: "Conversion successful",files : validatedFiles,stages:result.object.stages});
   } catch (err) {
     console.error("Conversion failed:", err);
     if(err.msg){
@@ -144,91 +154,80 @@ export async function convertCode(req, res) {
   }
 }
 
-// export async function directConvertCode(req, res) {
-//   try {
-//     const zipBuffer = req.file.buffer;
-//     const {sourceLanguage,targetLanguage} = req.body;
-//     console.log(targetLanguage,"kl")
-//     const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "node-to-flask"));
+export async function updateCode(req,res) {
+  try{
+    const {files,userPrompt} = req.body;
+        const result = await generateObject({
+        model : model(model_version,{structuredOutputs: true}),
+        // model,
+        messages : [
+          {
+            role : "system",
+            content : UPDATION_PROMPT.replace("[FILES]",JSON.stringify(files))
+          },
+          {
+            role : "user",
+            content : userPrompt
+          }
+        ],
+        schema : z.object({
+            success : z.boolean().describe("Contains true or false confirming whether changes are success or failure."),
+            files : z.array(z.object({
+                fileName: z.string().describe("Name of the file without any path. Just the file name"),
+                filePath: z.string().describe("entire path including the application name. No need to put absolute path"),
+                content: z.string(),
+            })),
+            summary : z.string().describe("Summary of the changes in markdown format."),
+            message : z.string().describe("Error message if channges is not successful"),
+        })
+    })
 
-//     const zip = new AdmZip(zipBuffer);
-//     zip.extractAllTo(tempDir, true);
+    if(!result.object.success){
+      throw {msg : result.object.message};
+    }
 
-//     const outputDir = path.join(__dirname+"/../../../../../../", "flask-converted");
-//     await fs.ensureDir(outputDir);
+    res.status(200).json({message: "Modification successful",files : result.object.files,summary : result.object.summary});
+  }
+  catch(err){
+    console.error("Conversion failed:", err);
+    if(err.msg){
+      res.status(409).json({message : err.msg})
+    }
+    else res.status(500).json({ error: "Failed to convert code" });
+  }
+}
 
-//     const filesToConvert = [];
-
-//     function findJsFiles(dir) {
-//       const entries = fs.readdirSync(dir, { withFileTypes: true });
-//       for (const entry of entries) {
-//         const fullPath = path.join(dir, entry.name);
-//         for(const ignorableFile of ignorableFiles){
-//           if(fullPath.includes(ignorableFile)){
-//             throw {msg : "Please ensure to remove Dependency Installation Directories, Build Artifacts, Runtime Caches or Generated Files for successful coversion."}
-//           }
-//         }
-//         if (entry.isDirectory()) {
-//           findJsFiles(fullPath);
-//         }
-//         // else if (entry.name.endsWith(".js") || entry.name.endsWith(".json") || entry.name.endsWith(".html") || entry.name.endsWith(".jsx") || entry.name.endsWith(".css")) {
-//         //   filesToConvert.push(fullPath);
-//         // }
-//         else{
-//           filesToConvert.push(fullPath);
-//         }
-//       }
-//     }
-
-//     findJsFiles(tempDir);
-
-//     let filesContent = [];
-//     for (const filePath of filesToConvert) {
-//       const jsCode = fs.readFileSync(filePath, "utf-8");
-//       filesContent = [...filesContent, {filePath : path.relative(tempDir, filePath),code : jsCode}];
-//     }
-
-//     const outputPath = path.join(outputDir, "file-content.json");
-//     await fs.ensureDir(path.dirname(outputPath));
-//     fs.writeFileSync(outputPath, JSON.stringify(filesContent));
-
-//     const result = await generateObject({
-//         model : model(model_version,{structuredOutputs: true}),
-//         // model,
-//         messages : [
-//           {
-//             role : "system",
-//             content : prompt.replace("[TARGET_LANGUAGE/FRAMEWORK]",targetLanguage).replace("[SOURCE_LANGUAGE/FRAMEWORK]",sourceLanguage)
-//           },
-//           {
-//             role : "user",
-//             content : JSON.stringify(filesContent)
-//           }
-//         ],
-//         schema : z.object({
-//             success : z.boolean().describe("Contains true or false confirming whether conversion is success or failure."),
-//             files : z.array(z.object({
-//                 fileName: z.string(),
-//                 filePath: z.string().describe("just relative path. No need to put absolute path"),
-//                 content: z.string(),
-//             })),
-//             message : z.string().describe("Error message if concersion is not successful"),
-//         })
-//     })
-
-//     if(!result.object.success){
-//       throw {msg : result.object.message};
-//     }
-
-//     res.status(200).json({message: "Conversion successful",files : result.object.files});
-//   } catch (err) {
-//     console.error("Conversion failed:", err);
-//     if(err.msg){
-//       res.status(409).json({message : err.msg})
-//     }
-//     else res.status(500).json({ error: "Failed to convert code" });
-//   }
-// }
+async function getValidatedCode(sourceLanguage,targetLanguage,filesContent){
+  try{
+        const result = await generateObject({
+        model : model(model_version,{structuredOutputs: true}),
+        // model,
+        messages : [
+          {
+            role : "system",
+            content : VALIDATION_PROMPT.replace("[TARGET_LANGUAGE/FRAMEWORK]",targetLanguage).replace("[SOURCE_LANGUAGE/FRAMEWORK]",sourceLanguage)
+          },
+          {
+            role : "user",
+            content : JSON.stringify(filesContent)
+          }
+        ],
+        schema : z.object({
+            success : z.boolean().describe("Contains true or false confirming whether conversion is success or failure."),
+            files : z.array(z.object({
+                fileName: z.string().describe("Name of the file without any path. Just the file name"),
+                filePath: z.string().describe("entire path including the application name. No need to put absolute path"),
+                content: z.string(),
+            })),
+            message : z.string().describe("Error message if concersion is not successful"),
+        })
+    })
+    return result.object.files
+  }
+  catch(err){
+    throw err;
+  }
+}
 
 export async function downloadCode(req,res){
   try{
@@ -260,137 +259,3 @@ export async function downloadCode(req,res){
     res.status(500).json({ error: "Failed to download code" });
   }
 }
-
-// export async function convertCode(req, res) {
-//   try {
-//     // 1. Get the uploaded zip file
-//     const zipBuffer = req.file.buffer;
-//     const tempDir = path.join(__dirname+"/../../../../../../", "node-to-flask");
-
-//     // 2. Extract zip to temp folder
-//     const zip = new AdmZip(zipBuffer);
-//     zip.extractAllTo(tempDir, true);
-
-//     // 3. Read and convert .js files to Python Flask
-//     const outputDir = path.join(tempDir, "flask-converted");
-//     await fs.ensureDir(outputDir);
-
-//     const filesToConvert = [];
-
-//     function findJsFiles(dir) {
-//       const entries = fs.readdirSync(dir, { withFileTypes: true });
-//       for (const entry of entries) {
-//         const fullPath = path.join(dir, entry.name);
-//         if (entry.isDirectory()) {
-//           findJsFiles(fullPath);
-//         } else if (entry.name.endsWith(".js")) {
-//           filesToConvert.push(fullPath);
-//         }
-//       }
-//     }
-
-//     findJsFiles(tempDir);
-
-//     for (const filePath of filesToConvert) {
-//       const jsCode = fs.readFileSync(filePath, "utf-8");
-
-//       const prompt = `You are senior developer proficient in both node js and Flask(python). Your job is to convert node js applications into Flask applications. You will not receive the entire application at a time. You will receive file by file and need to convert the file just mantling continuity with the other files the application. You may see some imports in a file where you need to assume they are already created so you no need to create again. Just write equivalent flask file for given js file only. No need to write instructions also. Provide just plain code without any explanations. Keep in mind that you only need to write code not paragraphs of instructions. If the file is a package.json then change it to requirements file with relavant equivalant python packages needs to be installed in order to run the flask application. Strictly generate the code in plan text not in code markdown.\n\n JS code : \n\n${jsCode}`;
-
-//       const result = await generateText({
-//         model,
-//         prompt,
-//       });
-
-//       const pythonCode = result.text;
-//       const relativePath = path.relative(tempDir, filePath).replace(/\.js$/, ".py");
-//       const outputPath = path.join(outputDir, relativePath);
-//       await fs.ensureDir(path.dirname(outputPath));
-//       fs.writeFileSync(outputPath, pythonCode);
-//     }
-
-//     // 4. Zip the converted Flask app
-//     const outputZipPath = path.join(tempDir, "flask_app.zip");
-//     const outputZip = new AdmZip();
-//     outputZip.addLocalFolder(outputDir);
-//     outputZip.writeZip(outputZipPath);
-
-//     // 5. Send zip file as response
-//     // res.download(outputZipPath, "flask_app.zip", () => {
-//     //   fs.emptyDir(tempDir, err => {
-//     //     if (err) return console.error(err)
-//     //     console.log('success!')
-//     //   })
-//     // });
-//     res.status(200).json({
-//       message: "Conversion successful"});
-//   } catch (err) {
-//     console.error("Conversion failed:", err);
-//     res.status(500).json({ error: "Failed to convert code" });
-//   }
-// }
-
-// export async function convertCode(req, res) {
-//   try {
-//     // 1. Get the uploaded zip file
-//     const zipBuffer = req.file.buffer;
-//     const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "node-to-flask-"));
-
-//     // 2. Extract zip to temp folder
-//     const zip = new AdmZip(zipBuffer);
-//     zip.extractAllTo(tempDir, true);
-
-//     // 3. Read and convert .js files to Python Flask
-//     const outputDir = path.join(tempDir, "flask-converted");
-//     await fs.ensureDir(outputDir);
-
-//     const filesToConvert = [];
-
-//     function findJsFiles(dir) {
-//       const entries = fs.readdirSync(dir, { withFileTypes: true });
-//       for (const entry of entries) {
-//         const fullPath = path.join(dir, entry.name);
-//         if (entry.isDirectory()) {
-//           findJsFiles(fullPath);
-//         } else if (entry.name.endsWith(".js")) {
-//           filesToConvert.push(fullPath);
-//         }
-//       }
-//     }
-
-//     findJsFiles(tempDir);
-
-//     for (const filePath of filesToConvert) {
-//       const jsCode = fs.readFileSync(filePath, "utf-8");
-
-//       const prompt = `Convert the following Node.js (Express) file into an equivalent Python Flask file. Preserve route logic, middleware, and clean code.\n\n${jsCode}`;
-
-//       const result = await generateText({
-//         model,
-//         prompt,
-//       });
-
-//       const pythonCode = result.text;
-//       const relativePath = path.relative(tempDir, filePath).replace(/\.js$/, ".py");
-//       const outputPath = path.join(outputDir, relativePath);
-//       await fs.ensureDir(path.dirname(outputPath));
-//       fs.writeFileSync(outputPath, pythonCode);
-//     }
-
-//     // 4. Zip the converted Flask app
-//     const outputZipPath = path.join(tempDir, "flask_app.zip");
-//     const outputZip = new AdmZip();
-//     outputZip.addLocalFolder(outputDir);
-//     outputZip.writeZip(outputZipPath);
-
-//     // 5. Send zip file as response
-//     res.download(outputZipPath, "flask_app.zip", () => {
-//       fs.emptyDir(tempDir, err => {
-//         if (err) return console.error(err)
-//         console.log('success!')
-//       })
-//     });
-//   } catch (err) {
-//     console.error("Conversion failed:", err);
-//     res.status(500).json({ error: "Failed to convert code" });
-//   }
-// }

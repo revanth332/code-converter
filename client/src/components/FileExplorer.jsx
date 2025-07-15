@@ -1,26 +1,39 @@
+"use client"
 
 import { useState } from "react"
 import { ChevronRight, ChevronDown, FileIcon, FolderIcon } from "lucide-react"
+import { cn } from "@/lib/utils"
 
 
-export function FileExplorer({ fileStructure, onFileSelect, files }) {
+export function FileExplorer({ fileStructure, onFileSelect, files, openFiles }) {
   return (
-    <div className="p-2 flex-1 border overflow-auto">
-      {Object.entries(fileStructure).map(([folderName, content]) => (
-        <FolderItem
-          key={folderName}
-          name={folderName}
-          content={content}
-          onFileSelect={onFileSelect}
-          files={files}
-          level={0}
-        />
-      ))}
+    <div>
+      <div className="bg-white p-3 rounded-lg border-b rounded-e-none rounded-b-none">
+        <h3 className="font-semibold text-sm">Explorer</h3>
+        <div className="text-xs text-gray-500 mb-2">
+          {files.length} files • {openFiles.length} open
+        </div>
+      </div>
+
+      <div className="p-2">
+        {Object.entries(fileStructure).map(([folderName, content]) => (
+          <FolderItem
+            key={folderName}
+            name={folderName}
+            content={content}
+            onFileSelect={onFileSelect}
+            files={files}
+            openFiles={openFiles}
+            level={0}
+          />
+        ))}
+      </div>
     </div>
   )
 }
 
-function FolderItem({ name, content, onFileSelect, files, level }) {
+
+function FolderItem({ name, content, onFileSelect, files, openFiles, level }) {
   const [isOpen, setIsOpen] = useState(level < 2)
 
   const toggleOpen = () => {
@@ -30,12 +43,12 @@ function FolderItem({ name, content, onFileSelect, files, level }) {
   return (
     <div className="select-none">
       <div
-        className="flex items-center py-1 px-2 hover:bg-gray-200 dark:hover:bg-gray-800 rounded cursor-pointer"
+        className="flex items-center py-1 px-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded cursor-pointer"
         onClick={toggleOpen}
         style={{ paddingLeft: `${level * 8 + 8}px` }}
       >
         <span className="mr-1">{isOpen ? <ChevronDown size={16} /> : <ChevronRight size={16} />}</span>
-        <FolderIcon size={16} className="mr-2 text-blue-600" />
+        <FolderIcon size={16} className="mr-2 text-yellow-500" />
         <span className="text-sm">{name}</span>
       </div>
 
@@ -47,7 +60,15 @@ function FolderItem({ name, content, onFileSelect, files, level }) {
               const file = files.find((f) => f.filePath === itemContent)
               if (!file) return null
 
-              return <FileItem key={itemContent} file={file} onFileSelect={onFileSelect} level={level + 1} />
+              return (
+                <FileItem
+                  key={itemContent}
+                  file={file}
+                  onFileSelect={onFileSelect}
+                  level={level + 1}
+                  isOpen={openFiles.some((f) => f.filePath === file.filePath)}
+                />
+              )
             } else {
               // This is a folder
               return (
@@ -57,6 +78,7 @@ function FolderItem({ name, content, onFileSelect, files, level }) {
                   content={itemContent}
                   onFileSelect={onFileSelect}
                   files={files}
+                  openFiles={openFiles}
                   level={level + 1}
                 />
               )
@@ -69,15 +91,18 @@ function FolderItem({ name, content, onFileSelect, files, level }) {
 }
 
 
-function FileItem({ file, onFileSelect, level }) {
+function FileItem({ file, onFileSelect, level, isOpen }) {
   return (
     <div
-      className="flex items-center py-1 px-2 hover:bg-gray-200 dark:hover:bg-gray-800 rounded cursor-pointer"
+      className={cn(
+        "flex items-center py-1 px-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded cursor-pointer",
+        isOpen && "bg-blue-50 dark:bg-blue-900/20",
+      )}
       onClick={() => onFileSelect(file)}
       style={{ paddingLeft: `${level * 8 + 8 + 16}px` }}
     >
-      <span><FileIcon size={16} className="mr-2 text-green-600" /></span>
-      <span className="text-sm">{file.fileName}</span>
+      <FileIcon size={16} className="mr-2 text-blue-500" />
+      <span className={cn("text-sm", isOpen && "font-medium text-blue-600 dark:text-blue-400")}>{file.fileName}</span>
     </div>
   )
 }

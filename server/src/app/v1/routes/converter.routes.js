@@ -1,5 +1,5 @@
 
-import { upload, convertCode, downloadCode,extractZip } from '../controllers/converter.controller.js'
+import { upload, convertCode, downloadCode,extractZip,updateCode } from '../controllers/converter.controller.js'
 import express from 'express'
 const router = express.Router();
 
@@ -8,6 +8,9 @@ router.route('/extract')
 
 router.route('/convert')
     .post(convertCode);
+
+router.route('/update')
+    .post(updateCode);
 
 router.route('/convert/download')
     .post(downloadCode);
