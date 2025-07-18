@@ -6,13 +6,16 @@ import { cn } from "@/lib/utils"
 import { Badge } from "@/components/ui/badge"
 import Markdown from "react-markdown";
 import { toast } from "sonner"
+import { VersionDisplay } from "./VersionDisplay"
+import { Switch } from "@/components/ui/switch"
 
-export function ChatInterface({ onModificationRequest,messages,openFiles, activeFileId }) {
+export function ChatInterface({globalChatEnabled,setGlobalChatEnabled, onModificationRequest,messages,openFiles, activeFileId,handleFileSelect,handleCurrentVersion }) {
 
-  const [inputValue, setInputValue] = useState("")
-  const [isLoading, setIsLoading] = useState(false)
-  const scrollAreaRef = useRef(null)
+  const [inputValue, setInputValue] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const scrollAreaRef = useRef(null);
   const textAreaRef = useRef(null);
+  
 
   const scrollToBottom = () => {
     if (scrollAreaRef.current) {
@@ -60,38 +63,40 @@ export function ChatInterface({ onModificationRequest,messages,openFiles, active
 
   return (
     <div className="flex flex-col h-full">
-      <div className="p-4 border-b">
+      <div className="p-3 border-b">
         <h3 className="font-semibold text-sm">Code Assistant</h3>
-        <p className="text-xs text-gray-500">Ask me to modify your converted code</p>
+        {/* <p className="text-xs text-gray-500">Ask me to modify your converted code</p> */}
       </div>
 
       <ScrollArea ref={scrollAreaRef} className="flex-1 p-4">
-        <div className="space-y-4">
+        <div className="space-y-6">
           {messages.map((message) => (
             <div
               key={message.id}
-              className={cn("flex items-start space-x-2", message.sender === "user" ? "justify-end" : "justify-start")}
+              className={cn("flex items-start space-x-2")}
             >
               {message.sender === "assistant" && (
                 <div className="flex-shrink-0 w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center">
                   <Bot className="w-3 h-3 text-white" />
                 </div>
               )}
-              <div
-                className={cn(
-                  "max-w-[100%] rounded-lg px-3 py-2 text-sm ",
-                  message.sender === "user"
-                    ? "bg-blue-500 text-white ml-auto"
-                    : "bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-gray-100 overflow-hidden text-wrap",
-                )}
-              >
-                <Markdown>{message.content}</Markdown>
-              </div>
               {message.sender === "user" && (
                 <div className="flex-shrink-0 w-6 h-6 bg-gray-500 rounded-full flex items-center justify-center">
                   <User className="w-3 h-3 text-white" />
                 </div>
               )}
+              <div
+                className={cn(
+                  "max-w-[100%] rounded-lg text-sm leading-6",
+                  message.sender === "user"
+                    ? "ml-auto"
+                    : "dark:text-gray-100",
+                )}
+              >
+                <Markdown>{message.content}</Markdown>
+                {message.version && <VersionDisplay handleCurrentVersion={handleCurrentVersion} handleFileSelect={handleFileSelect} version={message.version} />}
+              </div>
+
             </div>
           ))}
           {isLoading && (
@@ -127,6 +132,9 @@ export function ChatInterface({ onModificationRequest,messages,openFiles, active
         </div>
       </div> */}
       <div className="p-4">
+        <div className="flex justify-end py-2 pr-1">
+          <span className="text-gray-500 font-semibold text-sm mr-2">Global</span> <Switch onCheckedChange={setGlobalChatEnabled} checked={globalChatEnabled} className="h-5 w-10" /> 
+        </div>
         <div className="bg-white w-full rounded-xl shadow-lg border border-gray-200 hover:shadow-xl transition-shadow duration-200">
           {/* Text Area on Top */}
           <div className="p-4 pb-2">
@@ -155,7 +163,7 @@ export function ChatInterface({ onModificationRequest,messages,openFiles, active
           <div className="flex items-center justify-between p-2">
             {/* Right side controls */}
             <div>
-              { activeFile && <Badge variant="default">{activeFile.fileName}</Badge>}
+              { (activeFile && !globalChatEnabled) && <Badge variant="default">{activeFile.fileName}</Badge>}
             </div>
             <div className="flex items-center gap-2">
               <Button

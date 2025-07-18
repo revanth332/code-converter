@@ -1,4 +1,4 @@
-import { useEffect, useRef,useState } from "react"
+import {  useRef,useState } from "react"
 import { Button } from "@/components/ui/button"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Check, Copy, Save, X } from "lucide-react"
@@ -28,11 +28,10 @@ export function TabbedEditor({
   onFileClose,
   onFileSave,
   hasChanges,
-  setHasChanges
+  setHasChanges,
+  setCode
 }) {
     const editorRef = useRef(null);
-    const [code,setCode] = useState("");
-    const [copied,setCopied] = useState(false);
 
     function handleEditorDidMount(editor) {
         editorRef.current = editor;
@@ -117,29 +116,10 @@ export function TabbedEditor({
     }
   }
 
-  const handleSave = () => {
-    onFileSave({...activeFile,content:code});
-    setHasChanges(false);
-  }
-
-  const handleCopyCode = () => {
-    navigator.clipboard.writeText(activeFile.content)
-      .then(() => {
-        toast.success("Code copied to clipboard");
-        setCopied(true);
-        setTimeout(() => setCopied(false), 2000);
-      })
-      .catch((err) => {
-        console.error("Failed to copy code: ", err)
-        toast.error("Failed to copy code")
-      })
-
-  }
-
   return (
-    <div className="flex flex-col h-full w-full">
+    <div className="flex flex-col h-full w-full rounded-e-lg ">
       {/* Tabs */}
-      <div className="flex-shrink-0 flex bg-white dark:bg-gray-900 rouned-lg">
+      <div className="flex-shrink-0 flex bg-white dark:bg-gray-900 rounded-e-lg ">
         <ScrollArea className="flex-1">
           <div className="flex">
             {openFiles.map((file) => (
@@ -182,7 +162,7 @@ export function TabbedEditor({
                     <Breadcrumb>
                       <BreadcrumbList>
                       {
-                        activeFile.filePath.split("/").map((part, index) => {
+                        activeFile.filePath?.split("/").map((part, index) => {
                           if(index != activeFile.filePath.split("/").length - 1) return(
                           <>
                             <BreadcrumbItem key={index}>
@@ -211,22 +191,10 @@ export function TabbedEditor({
                     </Breadcrumb>
                     {/* <span className="text-xs px-2 py-1 bg-gray-200 dark:bg-gray-700 rounded">{activeFile.filePath}</span> */}
                 </div>
-                <div>
-                  {!copied
-                  ? <Button size="sm" variant="ghost" onClick={() => handleCopyCode()}>
-                      <Copy className="w-4 h-4" />
-                    </Button>
-                  : <Button size="sm" variant="ghost">
-                      <Check className="w-4 h-4" />
-                    </Button>}
-                  <Button size="sm" variant="ghost" onClick={handleSave} disabled={!hasChanges}>
-                    <Save className="w-4 h-4" />
-                  </Button>
-                </div>
               
             </div>
             <div className="h-full p-2 rounded-lg">
-            <Editor onChange={value => handlCodeChange(value)} value={activeFile.content} onMount={handleEditorDidMount} theme='vs-dark' className='bg-code-bg' language={getLanguageFromExtension(activeFile.fileName)} />
+              <Editor onChange={value => handlCodeChange(value)} value={activeFile.content} onMount={handleEditorDidMount}   language={getLanguageFromExtension(activeFile.fileName)} />
             </div>
           </div>
         ) : (

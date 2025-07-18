@@ -8,12 +8,12 @@ import { cn } from "@/lib/utils"
 export function FileExplorer({ fileStructure, onFileSelect, files, openFiles }) {
   return (
     <div>
-      <div className="bg-white p-3 rounded-lg border-b rounded-e-none rounded-b-none">
-        <h3 className="font-semibold text-sm">Explorer</h3>
+      {/* <div className="bg-white p-3 rounded-lg border-b rounded-e-none rounded-b-none">
+        <h3 className="font-semibold text-sm">Code</h3>
         <div className="text-xs text-gray-500 mb-2">
           {files.length} files • {openFiles.length} open
         </div>
-      </div>
+      </div> */}
 
       <div className="p-2">
         {Object.entries(fileStructure).map(([folderName, content]) => (
@@ -95,14 +95,16 @@ function FileItem({ file, onFileSelect, level, isOpen }) {
   return (
     <div
       className={cn(
-        "flex items-center py-1 px-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded cursor-pointer",
-        isOpen && "bg-blue-50 dark:bg-blue-900/20",
+        "flex items-center  hover:bg-gray-100 dark:hover:bg-gray-800 rounded cursor-pointer my-1",
       )}
-      onClick={() => onFileSelect(file)}
+      onClick={() => onFileSelect(file,"explorer")}
       style={{ paddingLeft: `${level * 8 + 8 + 16}px` }}
     >
-      <FileIcon size={16} className="mr-2 text-blue-500" />
-      <span className={cn("text-sm", isOpen && "font-medium text-blue-600 dark:text-blue-400")}>{file.fileName}</span>
+      <p className={cn("w-full flex items-center py-1 px-2 rounded-md",isOpen && "bg-gray-100 dark:bg-blue-900/20")}>
+        <FileIcon size={16} className="mr-2 text-gray-500" />
+      <span className={cn("text-sm", isOpen && "font-medium text-gray-600 dark:text-blue-400")}>{file.fileName}</span>
+      </p>
+      
     </div>
   )
 }

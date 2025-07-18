@@ -30,15 +30,15 @@ const CONVERSION_PROMPT = `You are a specialized AI model designed for convertin
 
 const VALIDATION_PROMPT = `You are an application validator assistant that carefully analyse the application code for potential bugs like dependency mismatches, import issues like using absolute import instead of relative imports wherever necessary etc., You will be given a converted [TARGET_LANGUAGE/FRAMEWORK] applicaion code that is originally in [SOURCE_LANGUAGE/FRAMEWORK]. Gather all the possible fixes and carefully refactor the code where it needs refactoring maintaing overall module structure. Return the same format as the user input format. `
 
-const UPDATION_PROMPT = `you are an application debugger/modifier whose sole purpose is to analyse the given error or changes in file contents where the error occurs or changes needed. After analysing the file code generate the issue parts of the code and return the modified files in the same json format without changing the file names and paths. Only changing in the file code wherever there is need to change the code. Also generate the summary of the changes done. Here are the files details you have: [FILES].`
+const UPDATION_PROMPT = `you are an application debugger/modifier whose sole purpose is to analyse the given error or changes in file contents where the error occurs or changes needed. After analysing the file code generate the issue parts of the code and return the modified files in the same json format without changing the file names and paths. Only return the files that are modified. Also generate the summary of the changes done, number lines effected ans also change Type like "modified/added/deleted". If user message contains any greeting like 'Hello', 'How are you ?' just wish them back in the summary field. Here are the files details you have: [FILES].`
 
 // const model = azure(config.AZURE_OPENAI_DEPLOYMENT);
 const model = createGoogleGenerativeAI({
   apiKey : config.GEMINI_API_KEY
 });
 
-const model_version = "models/gemini-2.5-pro";
-// const model_version = "models/gemini-2.5-flash-preview-05-20";
+// const model_version = "models/gemini-2.5-pro";
+const model_version = "models/gemini-2.5-flash-preview-05-20";
 // const model_version = "models/gemini-2.0-flash"
 
 // Set up multer for handling file uploads
@@ -130,6 +130,7 @@ export async function convertCode(req, res) {
                 filePath: z.string().describe("entire path including the application name. No need to put absolute path"),
                 content: z.string(),
             })),
+            summary : z.string("A short summary about the converted applicaion."),
             message : z.string().describe("Error message if concersion is not successful"),
             stages : z.array(z.object({
               name : z.string(),
@@ -142,9 +143,9 @@ export async function convertCode(req, res) {
       throw {msg : result.object.message};
     }
 
-    const validatedFiles = await getValidatedCode(sourceLanguage,targetLanguage,result.object.files)
+    // const validatedFiles = await getValidatedCode(sourceLanguage,targetLanguage,result.object.files)
 
-    res.status(200).json({message: "Conversion successful",files : validatedFiles,stages:result.object.stages});
+    res.status(200).json({message: "Conversion successful",files : result.object.files,stages:result.object.stages,summary :result.object.summary });
   } catch (err) {
     console.error("Conversion failed:", err);
     if(err.msg){
@@ -156,7 +157,7 @@ export async function convertCode(req, res) {
 
 export async function updateCode(req,res) {
   try{
-    const {files,userPrompt} = req.body;
+    const {files,userPrompt,messages} = req.body;
         const result = await generateObject({
         model : model(model_version,{structuredOutputs: true}),
         // model,
@@ -165,10 +166,7 @@ export async function updateCode(req,res) {
             role : "system",
             content : UPDATION_PROMPT.replace("[FILES]",JSON.stringify(files))
           },
-          {
-            role : "user",
-            content : userPrompt
-          }
+          ...messages
         ],
         schema : z.object({
             success : z.boolean().describe("Contains true or false confirming whether changes are success or failure."),
@@ -176,8 +174,10 @@ export async function updateCode(req,res) {
                 fileName: z.string().describe("Name of the file without any path. Just the file name"),
                 filePath: z.string().describe("entire path including the application name. No need to put absolute path"),
                 content: z.string(),
+                linesChanged: z.number().describe("Number of lines changed in the file."),
+                changeType: z.enum(["modified", "added", "deleted"]).describe("Type of change made to the file (e.g., modified, added, deleted).")
             })),
-            summary : z.string().describe("Summary of the changes in markdown format."),
+            summary : z.string().describe("Summary of the changes in markdown format or general responses like wishing etc.,"),
             message : z.string().describe("Error message if channges is not successful"),
         })
     })

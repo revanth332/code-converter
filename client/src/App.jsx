@@ -26,14 +26,7 @@ export default function CodeConverter() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
   const [dragActive, setDragActive] = useState(false);
-  const [messages, setMessages] = useState([
-      {
-        id: "1",
-        content: "Hi! I can help you modify your converted code. What would you like to change?",
-        sender: "assistant",
-        timestamp: new Date(),
-      },
-    ])
+  const [messages, setMessages] = useState([])
   const [files, setFiles] = useState([]);
   // const [files, setFiles] = useState([
   //       {
@@ -71,7 +64,10 @@ export default function CodeConverter() {
   const [showCodeExplorer,setShowCodeExplorer] = useState(false);
   const [activeFileId, setActiveFileId] = useState(null);
   const [modificationLoading,setModificationLoading] = useState(false);
-  const [openFiles, setOpenFiles] = useState([])
+  const [openFiles, setOpenFiles] = useState([]);
+  const [versions, setVersions] = useState({});
+  const [currentVersion,setCurrentVersion] = useState(0);
+  const [globalChatEnabled,setGlobalChatEnabled] = useState(false);
   
 
   useEffect(() => {
@@ -120,7 +116,25 @@ export default function CodeConverter() {
 
         await new Promise((resolve) => setTimeout(resolve, 1000));
         setIsLoading(false);
+
         setFiles(conversionResponse.data.files);
+        const newVerionId = `v${Object.keys(versions).length + 1}`;
+        // console.log(newVerionId,Object.keys(versions).length + 1);
+        const newVersion = {
+              id: newVerionId,
+              timestamp: new Date(),
+              description: conversionResponse.data.summary,
+              filesChanged: conversionResponse.data.files,
+        }
+        setMessages([{
+          id: "1",
+          content: conversionResponse.data.summary,
+          sender: "assistant",
+          timestamp: new Date(),
+          version : newVersion
+        },]);
+        setCurrentVersion(newVerionId)
+        setVersions((prev) => ({...prev,[newVerionId] : conversionResponse.data.files}));
         setConversionComplete(true);
       } catch (err) {
         setIsLoading(false);
@@ -129,9 +143,22 @@ export default function CodeConverter() {
         }
         else setError("Conversion failed. Please try again.")
       }
+      finally{
+        setStages([
+          { name: "Upload", description: `Uploading your code...` },
+          { name: "Extracting", description: `Extracting files from the uploaded zip...` },
+          { name: "Converting", description: `Converting from ${sourceLanguage} to ${targetLanguage}...` },
+          { name: "Complete", description: `Your ${targetLanguage} code is ready!` },
+        ])
+      }
     } else {
       setError("Only .zip files are allowed.")
     }
+  }
+  const handleCurrentVersion = (verionId) => {
+    setCurrentVersion(verionId);
+    setFiles(versions[verionId]);
+    setOpenFiles([]);
   }
 
   const handleModificationRequest = async (inputValue) => {
@@ -145,38 +172,63 @@ export default function CodeConverter() {
           timestamp: new Date(),
         }
         setMessages((prev) => [...prev, userMessage]);
-        const tree = createDependencyTree(files);
-        const activeFile = files.find((file) => file.filePath === activeFileId);
-        const dependencyFiles = getDependenciesForFile(tree,activeFile.filePath).filter(file => file.type === "local");
-        console.log(dependencyFiles);
-        const requiredFiles = [activeFile]
-        for (const file of dependencyFiles) {
-          const existingFile = files.find(f => f.filePath === file.path);
-          if (existingFile) {
-            requiredFiles.push(existingFile);
+
+        let requiredFiles = [];
+        if(globalChatEnabled){
+          requiredFiles = files
+        }
+        else{
+          const tree = createDependencyTree(files);
+          const activeFile = files.find((file) => file.filePath === activeFileId);
+          const dependencyFiles = getDependenciesForFile(tree,activeFile.filePath).filter(file => file.type === "local");
+          console.log(dependencyFiles);
+          requiredFiles.push(activeFile);
+          for (const file of dependencyFiles) {
+            const existingFile = files.find(f => f.filePath === file.path);
+            if (existingFile) {
+              requiredFiles.push(existingFile);
+            }
           }
         }
-        console.log(requiredFiles);
-        const updationResponse = await axios.post("http://localhost:8001/v1/api/update",{files : requiredFiles,userPrompt:inputValue})
+       
+        console.log(messages);
+        const updationResponse = await axios.post("http://localhost:8001/v1/api/update",{files : requiredFiles,userPrompt:inputValue,messages : [...messages.map(message => ({role : message.sender,content : message.content})), {role : "user",content : inputValue}]})
+        const newVerionId = `v${Object.keys(versions).length + 1}`;
+        // console.log(newVerionId,Object.keys(versions).length + 1);
+        const newVersion = {
+              id: newVerionId,
+              timestamp: new Date(),
+              description: inputValue,
+              filesChanged: updationResponse.data.files,
+        }
+
         const assistantMessage = {
             id: (Date.now() + 1).toString(),
             content: updationResponse.data.summary,
             sender: "assistant",
             timestamp: new Date(),
+            version: updationResponse.data.files.length > 0 ? newVersion : null
         }
+        
         console.log(updationResponse.data.files);
-        setFiles((prevFiles) => {
-          const updatedFiles = [...prevFiles];
-          for (const updatedFile of updationResponse.data.files) {
-            const index = updatedFiles.findIndex(f => f.filePath === updatedFile.filePath);
-            console.log("Updating file:", updatedFile.filePath, "at index:", index);
-            if (index !== -1) {
-              updatedFiles[index] = {...updatedFiles[index], content: updatedFile.content };
+
+        if(updationResponse.data.files.length > 0){
+            setFiles((prevFiles) => {
+            const updatedFiles = [...prevFiles];
+            for (const updatedFile of updationResponse.data.files) {
+              const index = updatedFiles.findIndex(f => f.filePath === updatedFile.filePath);
+              console.log("Updating file:", updatedFile.filePath, "at index:", index);
+              if (index !== -1) {
+                updatedFiles[index] = {...updatedFiles[index], content: updatedFile.content };
+              }
             }
-          }
-          return updatedFiles;
-        });
-        setOpenFiles([]);
+            setVersions((prev) => ({...prev,[newVerionId] : updatedFiles}));
+            setCurrentVersion(newVerionId);
+            return updatedFiles;
+          });
+          setOpenFiles([]);
+        }
+        
         setMessages((prev) => [...prev, assistantMessage])
 
         //      const assistantMessage = {
@@ -253,7 +305,7 @@ export default function CodeConverter() {
   //   ]
   // }
   if(showCodeExplorer){
-    return <CodeExplorer openFiles={openFiles} setOpenFiles={setOpenFiles} modificationLoading={modificationLoading} activeFileId={activeFileId} setActiveFileId={setActiveFileId} messages={messages} handleModificationRequest={handleModificationRequest} files={files} setFiles={setFiles} onBack={() => setShowCodeExplorer(false)} />
+    return <CodeExplorer globalChatEnabled ={globalChatEnabled} setGlobalChatEnabled={setGlobalChatEnabled} handleCurrentVersion={handleCurrentVersion} currentVersion={currentVersion} versions={versions} setVersions={setVersions} openFiles={openFiles} setOpenFiles={setOpenFiles} modificationLoading={modificationLoading} activeFileId={activeFileId} setActiveFileId={setActiveFileId} messages={messages} handleModificationRequest={handleModificationRequest} files={files} setFiles={setFiles} onBack={() => setShowCodeExplorer(false)} />
   }
 
   return (
