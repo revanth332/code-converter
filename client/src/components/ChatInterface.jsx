@@ -1,21 +1,37 @@
 import { useState, useRef, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { ScrollArea } from "@/components/ui/scroll-area"
-import {  Bot, User, ArrowUp } from "lucide-react"
+import {  Bot, User, ArrowUp, Sparkles, Brain } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Badge } from "@/components/ui/badge"
 import Markdown from "react-markdown";
 import { toast } from "sonner"
 import { VersionDisplay } from "./VersionDisplay"
 import { Switch } from "@/components/ui/switch"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select"
 
-export function ChatInterface({globalChatEnabled,setGlobalChatEnabled, onModificationRequest,messages,openFiles, activeFileId,handleFileSelect,handleCurrentVersion }) {
+const aiModels = [
+  {
+    name : "Gemini 2.5 Pro",
+    version : "gemini-2.5-pro"
+  },
+  {
+    name : "Gemini 2.5 Flash",
+    version : "gemini-2.5-flash"
+  },
+  {
+    name : "Gemini 2.5 Flash-Lite Preview 06-17",
+    version : "gemini-2.5-flash-lite-preview-06-17"
+  },
+]
+
+export function ChatInterface({enhanceQuery,handleAiModel,globalChatEnabled,setGlobalChatEnabled, onModificationRequest,messages,openFiles, activeFileId,handleFileSelect,handleCurrentVersion }) {
 
   const [inputValue, setInputValue] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const scrollAreaRef = useRef(null);
   const textAreaRef = useRef(null);
-  
+  const [isEnhancingQuery,setIsEnhancingQuery] = useState(false);
 
   const scrollToBottom = () => {
     if (scrollAreaRef.current) {
@@ -58,6 +74,13 @@ export function ChatInterface({globalChatEnabled,setGlobalChatEnabled, onModific
   //     handleSendMessage()
   //   }
   // }
+
+  const handleEnhanceQuery = async () => {
+    setIsEnhancingQuery(true);
+    const query = await enhanceQuery(inputValue);
+    setInputValue(query);
+    setIsEnhancingQuery(false);
+  }
 
   const activeFile = openFiles.find((file) => file.filePath === activeFileId);
 
@@ -156,19 +179,39 @@ export function ChatInterface({globalChatEnabled,setGlobalChatEnabled, onModific
               placeholder="Ask a follow up..."
               className="w-full text-sm resize-none border-0 bg-transparent text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-0 leading-6 min-h-[24px] max-h-[200px]"
               rows={1}
+              disabled={isEnhancingQuery}
             />
           </div>
 
           {/* Controls Below */}
           <div className="flex items-center justify-between p-2">
             {/* Right side controls */}
-            <div>
-              { (activeFile && !globalChatEnabled) && <Badge variant="default">{activeFile.fileName}</Badge>}
+            <div className="flex">
+              <Select onValueChange={handleAiModel}>
+                    <SelectTrigger className="w-fit h-5 border-none hover:bg-gray-100 px-0 pl-2 mr-2">
+                      <Brain className="h-5 w-5" />
+                      {/* <SelectValue placeholder="V1" /> */}
+                    </SelectTrigger>
+                    <SelectContent>
+                      {
+                       aiModels.map((model,index) => <SelectItem key={index} value={model}>{model.name}</SelectItem>)
+                      }
+                    </SelectContent>
+              </Select>
+              { (activeFile && !globalChatEnabled) && <Badge variant="secondary">{activeFile.fileName}</Badge>}
             </div>
             <div className="flex items-center gap-2">
               <Button
+                disabled={(!inputValue.trim()) || isLoading || isEnhancingQuery}
+                size="sm"
+                variant={"ghost"}
+                onClick={() => handleEnhanceQuery()}
+              >
+                <Sparkles className="h-4 w-4" />
+              </Button>
+              <Button
                 onClick={() => handleSendMessage(inputValue)}
-                disabled={(!inputValue.trim()) || isLoading}
+                disabled={(!inputValue.trim()) || isLoading || isEnhancingQuery}
                 size="sm"
                 className="h-8 w-8 p-0 rounded-full bg-miracle-darkBlue hover:bg-miracle-darkBlue/80 disabled:opacity-50 disabled:cursor-not-allowed border-0"
               >

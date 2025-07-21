@@ -1,5 +1,5 @@
 import { createAzure } from "@ai-sdk/azure";
-import { generateObject } from "ai";
+import { generateObject,generateText } from "ai";
 import config from "../../../../../config.js";
 import multer from "multer";
 import AdmZip from "adm-zip";
@@ -10,7 +10,7 @@ import { dirname } from "path";
 import { fileURLToPath } from "url";
 import { z } from 'zod';
 import { createGoogleGenerativeAI } from '@ai-sdk/google';
-
+import { streamObject } from 'ai';
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
 const azure = createAzure({
@@ -31,6 +31,8 @@ const CONVERSION_PROMPT = `You are a specialized AI model designed for convertin
 const VALIDATION_PROMPT = `You are an application validator assistant that carefully analyse the application code for potential bugs like dependency mismatches, import issues like using absolute import instead of relative imports wherever necessary etc., You will be given a converted [TARGET_LANGUAGE/FRAMEWORK] applicaion code that is originally in [SOURCE_LANGUAGE/FRAMEWORK]. Gather all the possible fixes and carefully refactor the code where it needs refactoring maintaing overall module structure. Return the same format as the user input format. `
 
 const UPDATION_PROMPT = `you are an application debugger/modifier whose sole purpose is to analyse the given error or changes in file contents where the error occurs or changes needed. After analysing the file code generate the issue parts of the code and return the modified files in the same json format without changing the file names and paths. Only return the files that are modified. Also generate the summary of the changes done, number lines effected ans also change Type like "modified/added/deleted". If user message contains any greeting like 'Hello', 'How are you ?' just wish them back in the summary field. Here are the files details you have: [FILES].`
+
+const ENHANCEMENT_PROMPT = "you are a professional propt enhancer who understand the user query and convert into a more concised version of the user query which can be feed into the LLM model for better understanding of the users requirement. Do not add any prefixes like 'Of course' or something. Your goal is to just enhance the query and providing the user with enhanced query. Generate only plain text format. No Markdown format."
 
 // const model = azure(config.AZURE_OPENAI_DEPLOYMENT);
 const model = createGoogleGenerativeAI({
@@ -107,11 +109,11 @@ export async function extractZip(req,res) {
 
 export async function convertCode(req, res) {
   try {
-    const {sourceLanguage,targetLanguage,filesContent} = req.body;
-    console.log(targetLanguage,"kl")
+    const {sourceLanguage,targetLanguage,filesContent,modelVerion} = req.body;
+    console.log(targetLanguage,"kl",modelVerion)
 
-    const result = await generateObject({
-        model : model(model_version,{structuredOutputs: true}),
+    const result = await streamObject({
+        model : model(modelVerion,{structuredOutputs: true}),
         // model,
         messages : [
           {
@@ -139,13 +141,12 @@ export async function convertCode(req, res) {
         })
     })
 
-    if(!result.object.success){
-      throw {msg : result.object.message};
-    }
+    // res.writeHead(200, {
+    //   'Content-Type': 'text/plain; charset=utf-8',
+    //   'Transfer-Encoding': 'chunked',
+    // });
+    return result.pipeTextStreamToResponse(res);
 
-    // const validatedFiles = await getValidatedCode(sourceLanguage,targetLanguage,result.object.files)
-
-    res.status(200).json({message: "Conversion successful",files : result.object.files,stages:result.object.stages,summary :result.object.summary });
   } catch (err) {
     console.error("Conversion failed:", err);
     if(err.msg){
@@ -155,11 +156,61 @@ export async function convertCode(req, res) {
   }
 }
 
+// export async function convertCode(req, res) {
+//   try {
+//     const {sourceLanguage,targetLanguage,filesContent,modelVerion} = req.body;
+//     console.log(targetLanguage,"kl",modelVerion)
+
+//     const result = await generateObject({
+//         model : model(modelVerion,{structuredOutputs: true}),
+//         // model,
+//         messages : [
+//           {
+//             role : "system",
+//             content : CONVERSION_PROMPT.replace("[TARGET_LANGUAGE/FRAMEWORK]",targetLanguage).replace("[SOURCE_LANGUAGE/FRAMEWORK]",sourceLanguage)
+//           },
+//           {
+//             role : "user",
+//             content : JSON.stringify(filesContent)
+//           }
+//         ],
+//         schema : z.object({
+//             success : z.boolean().describe("Contains true or false confirming whether conversion is success or failure."),
+//             files : z.array(z.object({
+//                 fileName: z.string().describe("Name of the file without any path. Just the file name"),
+//                 filePath: z.string().describe("entire path including the application name. No need to put absolute path"),
+//                 content: z.string(),
+//             })),
+//             summary : z.string("A short summary about the converted applicaion."),
+//             message : z.string().describe("Error message if concersion is not successful"),
+//             stages : z.array(z.object({
+//               name : z.string(),
+//               description : z.string()
+//             })).describe("Titles describing each major stage in code conversion. Maximum length is 4 to 5.")
+//         })
+//     })
+
+//     if(!result.object.success){
+//       throw {msg : result.object.message};
+//     }
+
+//     const validatedFiles = await getValidatedCode(sourceLanguage,targetLanguage,result.object.files)
+
+//     res.status(200).json({message: "Conversion successful",files : result.object.files,stages:result.object.stages,summary :result.object.summary });
+//   } catch (err) {
+//     console.error("Conversion failed:", err);
+//     if(err.msg){
+//       res.status(409).json({message : err.msg})
+//     }
+//     else res.status(500).json({ error: "Failed to convert code" });
+//   }
+// }
+
 export async function updateCode(req,res) {
   try{
-    const {files,userPrompt,messages} = req.body;
-        const result = await generateObject({
-        model : model(model_version,{structuredOutputs: true}),
+    const {files,messages,modelVerion} = req.body;
+        const result = await streamObject({
+        model : model(modelVerion,{structuredOutputs: true}),
         // model,
         messages : [
           {
@@ -182,11 +233,13 @@ export async function updateCode(req,res) {
         })
     })
 
-    if(!result.object.success){
-      throw {msg : result.object.message};
-    }
+    // if(!result.object.success){
+    //   throw {msg : result.object.message};
+    // }
 
-    res.status(200).json({message: "Modification successful",files : result.object.files,summary : result.object.summary});
+    // res.status(200).json({message: "Modification successful",files : result.object.files,summary : result.object.summary});
+    return result.pipeTextStreamToResponse(res);
+
   }
   catch(err){
     console.error("Conversion failed:", err);
@@ -257,5 +310,32 @@ export async function downloadCode(req,res){
   }catch(err){
     console.error("Download failed:", err);
     res.status(500).json({ error: "Failed to download code" });
+  }
+}
+
+export async function enhanceQuery(req,res){
+  const {query,modelVerion} = req.body;
+  console.log(modelVerion)
+  try{
+    const result = await generateText({
+       model : model(modelVerion,{structuredOutputs: true}),
+        // model,
+        messages : [
+          {
+            role : "system",
+            content : ENHANCEMENT_PROMPT
+          },
+          {
+            role:"user",
+            content:query
+          }
+        ]
+    })
+    console.log(result.text);
+    res.status(200).json({success:true,enhancedQuery:result.text})
+  }
+  catch(err){
+    console.log(err);
+    res.status(500).json({success:false,message:"Failed to enhance the query"})
   }
 }

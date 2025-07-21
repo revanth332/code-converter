@@ -9,6 +9,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Label } from "@/components/ui/label"
 import { Button } from "./components/ui/button"
 import { toast } from "sonner"
+import { experimental_useObject as useObject } from '@ai-sdk/react';
+import * as z from 'zod';
 
 // Define available programming languages
 const programmingLanguages = [
@@ -68,7 +70,113 @@ export default function CodeConverter() {
   const [versions, setVersions] = useState({});
   const [currentVersion,setCurrentVersion] = useState(0);
   const [globalChatEnabled,setGlobalChatEnabled] = useState(false);
-  
+  const [aiModel,setAiModel] = useState({
+    name : "Gemini 2.5 Pro",
+    version : "models/gemini-2.5-flash-preview-05-20",
+  })
+  // const { object : conversionResponse, submit : handleConversion } = useObject({
+  //   api: 'http://localhost:8001/v1/api/convert',
+  //   schema: z.object({
+  //           success : z.boolean(),
+  //           files : z.array(z.object({
+  //               fileName: z.string(),
+  //               filePath: z.string(),
+  //               content: z.string(),
+  //           })),
+  //           summary : z.string(),
+  //           message : z.string(),
+  //           stages : z.array(z.object({
+  //             name : z.string(),
+  //             description : z.string()
+  //           }))
+  //   }),
+  //   onFinish : async (result) => {
+  //     console.log(result)
+  //     setCurrentStage(3);
+
+  //       await new Promise((resolve) => setTimeout(resolve, 1000));
+  //       setCurrentStage(4);
+
+  //       await new Promise((resolve) => setTimeout(resolve, 1000));
+  //       setIsLoading(false);
+  //     setFiles(result.object.files);
+  //       const newVerionId = `v${Object.keys(versions).length + 1}`;
+  //       // console.log(newVerionId,Object.keys(versions).length + 1);
+  //       const newVersion = {
+  //             id: newVerionId,
+  //             timestamp: new Date(),
+  //             description: result.object.summary,
+  //             filesChanged: result.object.files,
+  //       }
+  //       setMessages([{
+  //         id: "1",
+  //         content: result.object.summary,
+  //         sender: "assistant",
+  //         timestamp: new Date(),
+  //         version : newVersion
+  //       },]);
+  //       setCurrentVersion(newVerionId)
+  //       setVersions((prev) => ({...prev,[newVerionId] : result.object.files}));
+  //       setConversionComplete(true);
+  //   }
+  // });
+
+
+  // const { object : updationResponse, submit : handleUpdation } = useObject({
+  //   api: 'http://localhost:8001/v1/api/convert',
+  //   schema: z.object({
+  //           success : z.boolean(),
+  //           files : z.array(z.object({
+  //               fileName: z.string(),
+  //               filePath: z.string(),
+  //               content: z.string(),
+  //           })),
+  //           summary : z.string(),
+  //           message : z.string(),
+  //           stages : z.array(z.object({
+  //             name : z.string(),
+  //             description : z.string()
+  //           }))
+  //   }),
+  //   onFinish : async (result) => {
+  //             const newVerionId = `v${Object.keys(versions).length + 1}`;
+  //       // console.log(newVerionId,Object.keys(versions).length + 1);
+  //       const newVersion = {
+  //             id: newVerionId,
+  //             timestamp: new Date(),
+  //             filesChanged: result.object.files,
+  //       }
+
+  //       const assistantMessage = {
+  //           id: (Date.now() + 1).toString(),
+  //           content: result.object.summary,
+  //           sender: "assistant",
+  //           timestamp: new Date(),
+  //           version: result.object.files.length > 0 ? newVersion : null
+  //       }
+        
+  //       console.log(result.object.files);
+
+  //       if(result.object.files.length > 0){
+  //           setFiles((prevFiles) => {
+  //           const updatedFiles = [...prevFiles];
+  //           for (const updatedFile of result.object.files) {
+  //             const index = updatedFiles.findIndex(f => f.filePath === updatedFile.filePath);
+  //             console.log("Updating file:", updatedFile.filePath, "at index:", index);
+  //             if (index !== -1) {
+  //               updatedFiles[index] = {...updatedFiles[index], content: updatedFile.content };
+  //             }
+  //           }
+  //           setVersions((prev) => ({...prev,[newVerionId] : updatedFiles}));
+  //           setCurrentVersion(newVerionId);
+  //           return updatedFiles;
+  //         });
+  //         setOpenFiles([]);
+  //       }
+        
+  //       setMessages((prev) => [...prev, assistantMessage])
+  //   }
+  // });
 
   useEffect(() => {
     setStages([
@@ -101,7 +209,9 @@ export default function CodeConverter() {
         })
         setCurrentStage(2);
 
-        const conversionResponse = await axios.post("http://localhost:8001/v1/api/convert",{filesContent : extractResponse.data.filesContent,sourceLanguage,targetLanguage})
+        // handleConversion({filesContent : extractResponse.data.filesContent,sourceLanguage,targetLanguage,modelVerion:aiModel.version})
+        const conversionResponse = await axios.post("http://localhost:8001/v1/api/convert",{filesContent : extractResponse.data.filesContent,sourceLanguage,targetLanguage,modelVerion:aiModel.version});
+
         setStages(prev => prev.map((stage,index) => index === 2 ? ({...stage,subStages:conversionResponse.data.stages}) : stage))
         let currestSubstageIndex = 0;
         while(currestSubstageIndex < conversionResponse.data.stages.length){
@@ -141,7 +251,10 @@ export default function CodeConverter() {
         if(err.status === 409){
           setError(err?.response?.data?.message)
         }
-        else setError("Conversion failed. Please try again.")
+        else{
+          console.log(err)
+          setError("Conversion failed. Please try again.");
+        }
       }
       finally{
         setStages([
@@ -155,12 +268,100 @@ export default function CodeConverter() {
       setError("Only .zip files are allowed.")
     }
   }
-  const handleCurrentVersion = (verionId) => {
-    setCurrentVersion(verionId);
-    setFiles(versions[verionId]);
-    setOpenFiles([]);
-  }
 
+  // const handleModificationRequest = async (inputValue) => {
+  //   console.log("change requested");
+  //   try{
+  //     setModificationLoading(true);
+  //     const userMessage = {
+  //         id: Date.now().toString(),
+  //         content: inputValue,
+  //         sender: "user",
+  //         timestamp: new Date(),
+  //       }
+  //       setMessages((prev) => [...prev, userMessage]);
+
+  //       let requiredFiles = [];
+  //       if(globalChatEnabled){
+  //         requiredFiles = files
+  //       }
+  //       else{
+  //         const tree = createDependencyTree(files);
+  //         const activeFile = files.find((file) => file.filePath === activeFileId);
+  //         const dependencyFiles = getDependenciesForFile(tree,activeFile.filePath).filter(file => file.type === "local");
+  //         console.log(dependencyFiles);
+  //         requiredFiles.push(activeFile);
+  //         for (const file of dependencyFiles) {
+  //           const existingFile = files.find(f => f.filePath === file.path);
+  //           if (existingFile) {
+  //             requiredFiles.push(existingFile);
+  //           }
+  //         }
+  //       }
+       
+  //       console.log(messages);
+  //       // const updationResponse = await axios.post("http://localhost:8001/v1/api/update",{files : requiredFiles,modelVerion:aiModel.version,messages : [...messages.map(message => ({role : message.sender,content : message.content})), {role : "user",content : inputValue}]})
+  //       // const newVerionId = `v${Object.keys(versions).length + 1}`;
+  //       // // console.log(newVerionId,Object.keys(versions).length + 1);
+  //       // const newVersion = {
+  //       //       id: newVerionId,
+  //       //       timestamp: new Date(),
+  //       //       description: inputValue,
+  //       //       filesChanged: updationResponse.data.files,
+  //       // }
+
+  //       // const assistantMessage = {
+  //       //     id: (Date.now() + 1).toString(),
+  //       //     content: updationResponse.data.summary,
+  //       //     sender: "assistant",
+  //       //     timestamp: new Date(),
+  //       //     version: updationResponse.data.files.length > 0 ? newVersion : null
+  //       // }
+        
+  //       // console.log(updationResponse.data.files);
+
+  //       // if(updationResponse.data.files.length > 0){
+  //       //     setFiles((prevFiles) => {
+  //       //     const updatedFiles = [...prevFiles];
+  //       //     for (const updatedFile of updationResponse.data.files) {
+  //       //       const index = updatedFiles.findIndex(f => f.filePath === updatedFile.filePath);
+  //       //       console.log("Updating file:", updatedFile.filePath, "at index:", index);
+  //       //       if (index !== -1) {
+  //       //         updatedFiles[index] = {...updatedFiles[index], content: updatedFile.content };
+  //       //       }
+  //       //     }
+  //       //     setVersions((prev) => ({...prev,[newVerionId] : updatedFiles}));
+  //       //     setCurrentVersion(newVerionId);
+  //       //     return updatedFiles;
+  //       //   });
+  //       //   setOpenFiles([]);
+  //       // }
+        
+  //       // setMessages((prev) => [...prev, assistantMessage])
+
+  //       //      const assistantMessage = {
+  //       //     id: (Date.now() + 1).toString(),
+  //       //     content: inputValue,
+  //       //     sender: "assistant",
+  //       //     timestamp: new Date(),
+  //       // }
+  //       // setMessages((prev) => [...prev, assistantMessage])
+  //   }
+  //   catch(err){
+  //     console.log(err);
+  //     const assistantMessage = {
+  //           id: (Date.now() + 1).toString(),
+  //           content: err.response?.data?.message || "An error occurred",
+  //           sender: "assistant",
+  //           timestamp: new Date(),
+  //       }
+  //     // toast.error(err.message);
+  //     setMessages((prev) => [...prev, assistantMessage])
+  //   }
+  //   finally{
+  //     setModificationLoading(false);
+  //   }
+  // }
   const handleModificationRequest = async (inputValue) => {
     console.log("change requested");
     try{
@@ -192,7 +393,7 @@ export default function CodeConverter() {
         }
        
         console.log(messages);
-        const updationResponse = await axios.post("http://localhost:8001/v1/api/update",{files : requiredFiles,userPrompt:inputValue,messages : [...messages.map(message => ({role : message.sender,content : message.content})), {role : "user",content : inputValue}]})
+        const updationResponse = await axios.post("http://localhost:8001/v1/api/update",{files : requiredFiles,modelVerion:aiModel.version,messages : [...messages.map(message => ({role : message.sender,content : message.content})), {role : "user",content : inputValue}]})
         const newVerionId = `v${Object.keys(versions).length + 1}`;
         // console.log(newVerionId,Object.keys(versions).length + 1);
         const newVersion = {
@@ -255,6 +456,34 @@ export default function CodeConverter() {
     }
   }
 
+  const enhanceQuery = async (query) => {
+    if(query.length < 10){
+      toast.warning("Prompt is too short to enhance");
+      return;
+    }
+    try{
+      const response = await axios.post("http://localhost:8001/v1/api/enhance",{query,modelVerion:aiModel.version});
+      console.log(response.data.enhancedQuery);
+      return response.data.enhancedQuery;
+    }
+    catch(err){
+      console.log(err);
+      toast.error("Failed to enhance the prompt");
+      return query;
+    }
+  }
+
+  const handleAiModel = (model) => {
+    setAiModel(model);
+  }
+
+  const handleCurrentVersion = (verionId) => {
+    setCurrentVersion(verionId);
+    setFiles(versions[verionId]);
+    setOpenFiles([]);
+  }
+
+
   const handleFileChange = (e) => {
     if (e.target.files && e.target.files[0]) {
       handleUpload(e.target.files[0])
@@ -305,7 +534,7 @@ export default function CodeConverter() {
   //   ]
   // }
   if(showCodeExplorer){
-    return <CodeExplorer globalChatEnabled ={globalChatEnabled} setGlobalChatEnabled={setGlobalChatEnabled} handleCurrentVersion={handleCurrentVersion} currentVersion={currentVersion} versions={versions} setVersions={setVersions} openFiles={openFiles} setOpenFiles={setOpenFiles} modificationLoading={modificationLoading} activeFileId={activeFileId} setActiveFileId={setActiveFileId} messages={messages} handleModificationRequest={handleModificationRequest} files={files} setFiles={setFiles} onBack={() => setShowCodeExplorer(false)} />
+    return <CodeExplorer enhanceQuery={enhanceQuery} handleAiModel={handleAiModel} globalChatEnabled ={globalChatEnabled} setGlobalChatEnabled={setGlobalChatEnabled} handleCurrentVersion={handleCurrentVersion} currentVersion={currentVersion} versions={versions} setVersions={setVersions} openFiles={openFiles} setOpenFiles={setOpenFiles} modificationLoading={modificationLoading} activeFileId={activeFileId} setActiveFileId={setActiveFileId} messages={messages} handleModificationRequest={handleModificationRequest} files={files} setFiles={setFiles} onBack={() => setShowCodeExplorer(false)} />
   }
 
   return (
@@ -403,10 +632,13 @@ export default function CodeConverter() {
                   {isLoading && (
                     <div className="mt-6">
                       <Timeline
-                        currentStage={currentStage}
                         currentSubStage={currentSubStage}
+                        currentStage={currentStage}
                         stages={stages}
                       />
+                      {/* {
+                        object?.stages?.map((stage,index) => <p key={index}>{stage?.name}</p>)
+                      } */}
                     </div>
                   )}
 

@@ -24,7 +24,7 @@ import {
 //   onBack?: () => void
 // }
 
-export default function CodeExplorer({currentVersion,versions,handleCurrentVersion,globalChatEnabled,setGlobalChatEnabled, files, setFiles, onBack,openFiles,setOpenFiles, messages,handleModificationRequest,activeFileId,setActiveFileId,modificationLoading }) {
+export default function CodeExplorer({enhanceQuery,handleAiModel,currentVersion,versions,handleCurrentVersion,globalChatEnabled,setGlobalChatEnabled, files, setFiles, onBack,openFiles,setOpenFiles, messages,handleModificationRequest,activeFileId,setActiveFileId,modificationLoading }) {
   const fileStructure = parseFileStructure(files)
   const [hasChanges,setHasChanges] = useState(false);
   const [copied,setCopied] = useState(false);
@@ -148,7 +148,7 @@ export default function CodeExplorer({currentVersion,versions,handleCurrentVersi
               <CardTitle className="text-lg">AI Assistant</CardTitle>
             </CardHeader> */}
             <CardContent className="p-0 h-full">
-              <ChatInterface globalChatEnabled ={globalChatEnabled} setGlobalChatEnabled={setGlobalChatEnabled} handleCurrentVersion={handleCurrentVersion} handleFileSelect={handleFileSelect} activeFileId={activeFileId} openFiles={openFiles} onModificationRequest={handleModificationRequest} messages={messages} />
+              <ChatInterface enhanceQuery={enhanceQuery} handleAiModel={handleAiModel} globalChatEnabled ={globalChatEnabled} setGlobalChatEnabled={setGlobalChatEnabled} handleCurrentVersion={handleCurrentVersion} handleFileSelect={handleFileSelect} activeFileId={activeFileId} openFiles={openFiles} onModificationRequest={handleModificationRequest} messages={messages} />
             </CardContent>
           </Card>
         </div>
