@@ -128,13 +128,10 @@ export default function CodeExplorer({enhanceQuery,handleAiModel,currentVersion,
       {/* Header */}
       <div className="px-2 py-3 flex items-center justify-between w-full h-[6%]">
         <div className="flex items-center space-x-4">
-          {onBack && (
-            <Button variant="ghost" onClick={onBack} size={"sm"} className="flex items-center">
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              {/* Back to Converter */}
-            </Button>
-          )}
-          <h1 className="text-lg font-semibold">Code Explorer & Editor</h1>
+
+          <h1 className="text-lg font-semibold">Vibe Code</h1>
+          <p>/</p>
+          <p>Untitled Project</p>
         </div>
         <Button size={"sm"} variant={"ghost"} onClick={handleDownloadCode}><DownloadCloud className="h-4 w-4 mr-2" />Download</Button>
         {/* <ThemeToggle /> */}

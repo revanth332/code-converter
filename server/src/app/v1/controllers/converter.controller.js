@@ -34,6 +34,8 @@ const UPDATION_PROMPT = `you are an application debugger/modifier whose sole pur
 
 const ENHANCEMENT_PROMPT = "you are a professional propt enhancer who understand the user query and convert into a more concised version of the user query which can be feed into the LLM model for better understanding of the users requirement. Do not add any prefixes like 'Of course' or something. Your goal is to just enhance the query and providing the user with enhanced query. Generate only plain text format. No Markdown format."
 
+const REACT_PROMPT = `You are a senior professional React developer who has vast knowledge on best react development practices,debugging. patterns and also optimization techniques. You can build a robust yet modern, good looking web applications based on the user prompt leveraging modern Ui libraries. When the user asks a query carefully understand the user needs and cross check the requirements ask questions which library they prefer to use like shadcn, antd, chakra UI etc. Strictly use Vite, tailwind, And then start building the application. After completion, return the user with the json object containing keys as filename, filepath and content. Also if the user asks a question related to a specific feature are need modification by sending you the required files, please go through the files, undertand which files need modification and modify them and return them. When the appplication is created first time wrap the entire application in a folder with suitable name. If the query related to debugging use these files as context : `
+
 // const model = azure(config.AZURE_OPENAI_DEPLOYMENT);
 const model = createGoogleGenerativeAI({
   apiKey : config.GEMINI_API_KEY
@@ -209,36 +211,35 @@ export async function convertCode(req, res) {
 export async function updateCode(req,res) {
   try{
     const {files,messages,modelVerion} = req.body;
-        const result = await streamObject({
+        const result = await generateObject({
         model : model(modelVerion,{structuredOutputs: true}),
         // model,
         messages : [
           {
             role : "system",
-            content : UPDATION_PROMPT.replace("[FILES]",JSON.stringify(files))
+            content : REACT_PROMPT + " " + JSON.stringify(files)
           },
           ...messages
         ],
         schema : z.object({
-            success : z.boolean().describe("Contains true or false confirming whether changes are success or failure."),
+            success : z.boolean().describe("Contains true or false confirming whether changes/creation is success or failure."),
             files : z.array(z.object({
                 fileName: z.string().describe("Name of the file without any path. Just the file name"),
                 filePath: z.string().describe("entire path including the application name. No need to put absolute path"),
                 content: z.string(),
                 linesChanged: z.number().describe("Number of lines changed in the file."),
-                changeType: z.enum(["modified", "added", "deleted"]).describe("Type of change made to the file (e.g., modified, added, deleted).")
+                changeType: z.enum(["modified", "Generated"]).describe("Type of change made to the file (e.g., modified, generated).")
             })),
             summary : z.string().describe("Summary of the changes in markdown format or general responses like wishing etc.,"),
-            message : z.string().describe("Error message if channges is not successful"),
+            message : z.string().describe("Error message if channges/creation is not successful"),
         })
     })
 
-    // if(!result.object.success){
-    //   throw {msg : result.object.message};
-    // }
+    if(!result.object.success){
+      throw {msg : result.object.message};
+    }
 
-    // res.status(200).json({message: "Modification successful",files : result.object.files,summary : result.object.summary});
-    return result.pipeTextStreamToResponse(res);
+    res.status(200).json({message: "Modification/Generation successful",files : result.object.files,summary : result.object.summary});
 
   }
   catch(err){

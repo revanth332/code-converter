@@ -8,7 +8,8 @@ import Markdown from "react-markdown";
 import { toast } from "sonner"
 import { VersionDisplay } from "./VersionDisplay"
 import { Switch } from "@/components/ui/switch"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
+
 
 const aiModels = [
   {
@@ -46,12 +47,14 @@ export function ChatInterface({enhanceQuery,handleAiModel,globalChatEnabled,setG
     scrollToBottom()
   }, [messages])
 
+  // const handleDeleteFile
+
   const handleSendMessage = async () => {
     if (!inputValue.trim() || isLoading) return;
-    if(!activeFileId){
-      toast.warning("Please select a file to modify.");
-      return;
-    }
+    // if(!activeFileId){
+    //   toast.warning("Please select a file to modify.");
+    //   return;
+    // }
     setInputValue("")
     setIsLoading(true);
     if(textAreaRef.current) {
