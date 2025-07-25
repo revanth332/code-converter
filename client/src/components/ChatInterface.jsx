@@ -93,7 +93,7 @@ export function ChatInterface({enhanceQuery,handleAiModel,globalChatEnabled,setG
         <h3 className="font-semibold text-sm">Code Assistant</h3>
         {/* <p className="text-xs text-gray-500">Ask me to modify your converted code</p> */}
       </div>
-
+ 
       <ScrollArea ref={scrollAreaRef} className="flex-1 p-4">
         <div className="space-y-6">
           {messages.map((message) => (

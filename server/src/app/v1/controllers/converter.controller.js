@@ -11,7 +11,15 @@ import { fileURLToPath } from "url";
 import { z } from 'zod';
 import { createGoogleGenerativeAI } from '@ai-sdk/google';
 import { streamObject } from 'ai';
+import { exec } from "child_process";
+import { spawn } from "child_process";
+import readline from 'readline';
 const __dirname = dirname(fileURLToPath(import.meta.url));
+import { wss } from "../utils/weSocketManager.js";
+
+let devProcess = null;
+
+const ansiRegex = /[\u001b\u009b][[()#;?]*.{0,2}(?:[0-9]{1,4}(?:;[0-9]{0,4})*)?[0-9A-ORZcf-nqry=><]/g;
 
 const azure = createAzure({
   resourceName: config.AZURE_OPENAI_RESOURCE,
@@ -48,6 +56,7 @@ const model_version = "models/gemini-2.5-flash-preview-05-20";
 // Set up multer for handling file uploads
 const storage = multer.memoryStorage();
 export const upload = multer({ storage });
+
 
 export async function extractZip(req,res) {
   try{
@@ -211,6 +220,7 @@ export async function convertCode(req, res) {
 export async function updateCode(req,res) {
   try{
     const {files,messages,modelVerion} = req.body;
+    console.log(files);
         const result = await generateObject({
         model : model(modelVerion,{structuredOutputs: true}),
         // model,
@@ -251,37 +261,246 @@ export async function updateCode(req,res) {
   }
 }
 
-async function getValidatedCode(sourceLanguage,targetLanguage,filesContent){
-  try{
-        const result = await generateObject({
-        model : model(model_version,{structuredOutputs: true}),
-        // model,
-        messages : [
-          {
-            role : "system",
-            content : VALIDATION_PROMPT.replace("[TARGET_LANGUAGE/FRAMEWORK]",targetLanguage).replace("[SOURCE_LANGUAGE/FRAMEWORK]",sourceLanguage)
-          },
-          {
-            role : "user",
-            content : JSON.stringify(filesContent)
-          }
-        ],
-        schema : z.object({
-            success : z.boolean().describe("Contains true or false confirming whether conversion is success or failure."),
-            files : z.array(z.object({
-                fileName: z.string().describe("Name of the file without any path. Just the file name"),
-                filePath: z.string().describe("entire path including the application name. No need to put absolute path"),
-                content: z.string(),
-            })),
-            message : z.string().describe("Error message if concersion is not successful"),
-        })
-    })
-    return result.object.files
-  }
-  catch(err){
-    throw err;
+export async function applyCode(req,res){
+  try {
+    const { files } = req.body;
+    for(const file of files){
+      const filePath = "C:\\Users\\rlanka1\\Desktop\\" + file.filePath.replaceAll("/","\\");
+      await fs.ensureFile(filePath);
+      await fs.writeFile(filePath, file.content, "utf-8");
+    }
+    // const { filePath, newContent } = req.body;
+    // let filePath = "C:\\Users\\rlanka1\\Desktop\\flask-test\\app.py"
+    // if (!filePath || typeof newContent !== "string") {
+    //   return res.status(400).json({ error: "filePath and newContent are required." });
+    // }
+    
+    res.status(200).json({ success: true, message: `Files updated successfully.` });
+  } catch (err) {
+    console.error("File update failed:", err);
+    res.status(500).json({ error: "Failed to update file." });
   }
 }
+
+// export async function runCode(req,res){
+//   try {
+//     if(devProcess){
+//       console.log(devProcess);
+//       devProcess.kill();
+//     }
+
+//     res.setHeader('Content-Type', 'text/event-stream');
+//     res.setHeader('Cache-Control', 'no-cache');
+//     res.setHeader('Connection', 'keep-alive');
+//     res.flushHeaders();
+
+//     const {folder} = req.query;
+//     const folderPath = "C:\\Users\\rlanka1\\Desktop\\" + folder;
+//     console.log(folderPath)
+//     devProcess = spawn('npm', ['run', 'dev'], {
+//         cwd: folderPath,
+//         shell: true
+//     });
+
+//     console.log(`Started dev process with PID: ${devProcess.pid}`);
+//     // const sendEvent = (data) => {
+//     //   const cleanData = data.replace(ansiRegex, '\n\nt');
+//     //   // console.log(cleanData);
+//     //   res.write(`data: ${cleanData}\n\n`);
+//     // }
+
+//      devProcess.stdout.on('data', (data) => {
+//         // sendEvent(data.toString());
+//         const cleanData = data.toString().replace(ansiRegex, '\n\n');
+//         res.write(`data: ${cleanData}\n\n`);
+//         console.log(data.toString(),"data78")
+//     });
+
+//     devProcess.stderr.on('data', (data) => {
+//         sendEvent(`ERROR: ${data.toString()}`);
+//     });
+
+ 
+
+//     devProcess.on('close', (code) => {
+//         console.log(`Dev process exited with code ${code}`);
+//         sendEvent(`\nProcess exited with code ${code}.`);
+//         sendEvent('[DONE]');
+//         devProcess = null; // Clear the process variable
+//         res.end();
+//     });
+
+//     req.on('close', () => {
+//         console.log('Client disconnected, but the dev server will keep running.');
+//         // You might choose to kill the process here if that's the desired behavior.
+//         // if (devProcess) {
+//         //     devProcess.kill();
+//         //     console.log('Killed dev process because client disconnected.');
+//         // }
+//         res.end();
+//     });
+
+//     // res.status(200).json({ success: true, message: `Code run successfully.` });
+//   } catch (err) {
+//     console.error("Code run failed:", err);
+//     res.status(500).json({ error: "Failed to run code." });
+//   }
+// }
+
+export async function runCode(req, res) {
+  try {
+    if (devProcess) {
+      devProcess.kill();
+    }
+
+    const { folder } = req.body;
+    const folderPath = "C:\\Users\\rlanka1\\Desktop\\" + folder;
+    devProcess = spawn('npm', ['run', 'dev'], {
+      cwd: folderPath,
+      shell: true
+    });
+
+    // Find a connected WebSocket client (you may want to identify by user/session)
+    let wsClient = null;
+    wss.clients.forEach((client) => {
+      if (client.readyState === 1) {
+        wsClient = client;
+      }
+    });
+
+    devProcess.stdout.on('data', (data) => {
+      if (wsClient) wsClient.send(JSON.stringify({ type: 'stdout', data: data.toString().replace(ansiRegex, ' ') }));
+    });
+
+    devProcess.stderr.on('data', (data) => {
+      if (wsClient) wsClient.send(JSON.stringify({ type: 'stderr', data: data.toString().replace(ansiRegex, ' ') }));
+    });
+
+    devProcess.on('close', (code) => {
+      if (wsClient) wsClient.send(JSON.stringify({ type: 'close', code }));
+      devProcess = null;
+    });
+
+    // Respond to HTTP request that process started
+    res.status(200).json({ success: true, message: 'Process started. Output will be sent via WebSocket.' });
+  } catch (err) {
+    res.status(500).json({ error: "Failed to run code." });
+  }
+}
+
+export async function stopCode(req,res){
+  try {
+    const {port,folder} = req.query;
+    const command = "netstat -ano | findstr :"+port;
+    const folderPath = "C:\\Users\\rlanka1\\Desktop\\" + folder;
+    const options = {
+      cwd: folderPath
+    };
+
+    exec(command, options, (error, stdout, stderr) => {
+      if (error) {
+        // If there was an error executing the command
+        console.error(`Error executing command: ${error.message}`);
+        return res.status(500).json({ success: true });
+      }
+
+      if (stderr) {
+        // If the command wrote to standard error (e.g., warnings)
+        console.error(`Stderr: ${stderr}`);
+        return res.status(200).json({ success: true});
+      }
+      const lines = stdout.split('\n').filter(line => line.trim() !== '');
+      let killed = false;
+      for (const line of lines) {
+        const parts = line.trim().split(/\s+/);
+        const pid = parts[parts.length - 1];
+        if (/^\d+$/.test(pid)) {
+          exec(`taskkill /PID ${pid} /F`, options, (killErr, killStdout, killStderr) => {
+            if (killErr) {
+              console.error(`Failed to kill process ${pid}: ${killErr.message}`);
+            } else {
+              console.log(`Killed process ${pid}: ${killStdout}`);
+            }
+          });
+          killed = true;
+        }
+        console.log(pid);
+      }
+      return res.status(200).json({ success: true, killed });
+      // If the command executed successfully, stdout contains the output
+      // console.log(`Command output:\n${stdout}`);
+    })
+  } catch (err) {
+    console.error("Code run failed:", err);
+    res.status(500).json({ error: "Failed to run code." });
+  }
+}
+
+// export async function runCode(req,res){
+//   try {
+//     const {folder} = req.body;
+//     const command = "npm run dev";
+//     const folderPath = "C:\\Users\\rlanka1\\Desktop\\" + folder;
+//     const options = {
+//       cwd: folderPath
+//     };
+
+//     exec(command, options, (error, stdout, stderr) => {
+//       if (error) {
+//         // If there was an error executing the command
+//         console.error(`Error executing command: ${error.message}`);
+//         return res.status(200).json({ success: true, runInfo: {type:"error",time : new Date().toISOString(),description:error.message} });
+//       }
+
+//       if (stderr) {
+//         // If the command wrote to standard error (e.g., warnings)
+//         console.error(`Stderr: ${stderr}`);
+//         return res.status(200).json({ success: true, runInfo : {type:"error",time : new Date().toISOString(),description:stderr}});
+//       }
+
+//       // If the command executed successfully, stdout contains the output
+//       console.log(`Command output:\n${stdout}`);
+//       return res.status(200).json({ success: true, runInfo: {type:"output",time : new Date().toISOString(),description:stdout} });
+//     });
+
+//     // res.status(200).json({ success: true, message: `Code run successfully.` });
+//   } catch (err) {
+//     console.error("Code run failed:", err);
+//     res.status(500).json({ error: "Failed to run code." });
+//   }
+// }
+
+// async function getValidatedCode(sourceLanguage,targetLanguage,filesContent){
+//   try{
+//         const result = await generateObject({
+//         model : model(model_version,{structuredOutputs: true}),
+//         // model,
+//         messages : [
+//           {
+//             role : "system",
+//             content : VALIDATION_PROMPT.replace("[TARGET_LANGUAGE/FRAMEWORK]",targetLanguage).replace("[SOURCE_LANGUAGE/FRAMEWORK]",sourceLanguage)
+//           },
+//           {
+//             role : "user",
+//             content : JSON.stringify(filesContent)
+//           }
+//         ],
+//         schema : z.object({
+//             success : z.boolean().describe("Contains true or false confirming whether conversion is success or failure."),
+//             files : z.array(z.object({
+//                 fileName: z.string().describe("Name of the file without any path. Just the file name"),
+//                 filePath: z.string().describe("entire path including the application name. No need to put absolute path"),
+//                 content: z.string(),
+//             })),
+//             message : z.string().describe("Error message if concersion is not successful"),
+//         })
+//     })
+//     return result.object.files
+//   }
+//   catch(err){
+//     throw err;
+//   }
+// }
 
 export async function downloadCode(req,res){
   try{
@@ -298,11 +517,11 @@ export async function downloadCode(req,res){
     }
 
     const outputZip = new AdmZip();
-    const outputZipPath = path.join(tempDir, "flask_app.zip");
+    const outputZipPath = path.join(tempDir, "code_converter.zip");
     outputZip.addLocalFolder(tempDir);
     outputZip.writeZip(outputZipPath);
 
-    res.download(outputZipPath, "flask_app.zip", () => {
+    res.download(outputZipPath, "code_converter.zip", () => {
       fs.emptyDir(tempDir, err => {
         if (err) return console.error(err)
         console.log('success!')

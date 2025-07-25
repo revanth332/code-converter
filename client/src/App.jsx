@@ -29,29 +29,107 @@ export default function CodeConverter() {
   const [error, setError] = useState(null);
   const [dragActive, setDragActive] = useState(false);
   const [messages, setMessages] = useState([])
-  const [files, setFiles] = useState([]);
-  // const [files, setFiles] = useState([
-  //       {
-  //           "fileName": "users.py",
-  //           "filePath": "flask-test/routes/users.py",
-  //           "content": "from flask import jsonify, request, Blueprint, abort\r\n\r\nusers_bp = Blueprint('users', __name__)\r\n\r\nusers = [\r\n    { \"id\": 1, \"name\": \"Alice\" },\r\n    { \"id\": 2, \"name\": \"Bob\" }\r\n]\r\n\r\n# GET all users\r\n@users_bp.route(\"/\", methods=[\"GET\"])\r\ndef get_all_users():\r\n    return jsonify(users)\r\n\r\n# GET user by ID\r\n@users_bp.route(\"/<int:id>\", methods=[\"GET\"])\r\ndef get_user_by_id(id):\r\n    user = next((u for u in users if u[\"id\"] == id), None)\r\n    if user:\r\n        return jsonify(user)\r\n    else:\r\n        abort(404, description=\"User not found\")\r\n\r\n# POST create new user\r\n@users_bp.route(\"/\", methods=[\"POST\"])\r\ndef create_user():\r\n    if not request.json or 'name' not in request.json:\r\n        abort(400, description=\"Missing 'name' in request body\")\r\n    \r\n    new_user = {\r\n        \"id\": len(users) + 1,\r\n        \"name\": request.json[\"name\"]\r\n    }\r\n    users.append(new_user)\r\n    return jsonify(new_user), 201\r\n"
-  //       },
-  //       {
-  //           "fileName": "app.py",
-  //           "filePath": "flask-test/app.py",
-  //           "content": "from flask import Flask\r\nfrom routes.users import users_bp\r\n\r\napp = Flask(__name__)\r\n\r\n# Register blueprints\r\napp.register_blueprint(users_bp, url_prefix='/users')\r\n\r\n@app.route(\"/\", methods=[\"GET\"])\r\ndef home():\r\n    return \"Welcome to the Flask Test App\"\r\n\r\nif __name__ == \"__main__\":\r\n    app.run(debug=True, port=3000)\r\n"
-  //       },
-  //       {
-  //           "fileName": "requirements.txt",
-  //           "filePath": "flask-test/requirements.txt",
-  //           "content": "Flask\r\n"
-  //       },
-  //       {
-  //           "fileName": "__init__.py",
-  //           "filePath": "flask-test/routes/__init__.py",
-  //           "content": ""
-  //       }
-  //   ]);
+  // const [files, setFiles] = useState([]);
+  const [files, setFiles] = useState([
+    {
+        "fileName": "package.json",
+        "filePath": "shadcn-todo-app/package.json",
+        "content": "{\n  \"name\": \"shadcn-todo-app\",\n  \"private\": true,\n  \"version\": \"0.0.0\",\n  \"type\": \"module\",\n  \"scripts\": {\n    \"dev\": \"vite\",\n    \"build\": \"vite build\",\n    \"lint\": \"eslint . --ext js,jsx --report-unused-disable-directives --max-warnings 0\",\n    \"preview\": \"vite preview\"\n  },\n  \"dependencies\": {\n    \"@radix-ui/react-checkbox\": \"^1.0.4\",\n    \"@radix-ui/react-icons\": \"^1.3.0\",\n    \"@radix-ui/react-label\": \"^2.0.2\",\n    \"@radix-ui/react-slot\": \"^1.0.2\",\n    \"class-variance-authority\": \"^0.7.0\",\n    \"clsx\": \"^2.1.0\",\n    \"lucide-react\": \"^0.363.0\",\n    \"react\": \"^18.2.0\",\n    \"react-dom\": \"^18.2.0\",\n    \"tailwind-merge\": \"^2.2.2\",\n    \"tailwindcss-animate\": \"^1.0.7\"\n  },\n  \"devDependencies\": {\n    \"@types/react\": \"^18.2.66\",\n    \"@types/react-dom\": \"^18.2.22\",\n    \"@vitejs/plugin-react\": \"^4.2.1\",\n    \"autoprefixer\": \"^10.4.19\",\n    \"eslint\": \"^8.57.0\",\n    \"eslint-plugin-react\": \"^7.34.1\",\n    \"eslint-plugin-react-hooks\": \"^4.6.0\",\n    \"eslint-plugin-react-refresh\": \"^0.4.6\",\n    \"postcss\": \"^8.4.38\",\n    \"tailwindcss\": \"^3.4.1\",\n    \"vite\": \"^5.2.0\"\n  }\n}\n",
+        "linesChanged": 41,
+        "changeType": "Generated"
+    },
+    {
+        "fileName": "index.html",
+        "filePath": "shadcn-todo-app/index.html",
+        "content": "<!doctype html>\n<html lang=\"en\">\n  <head>\n    <meta charset=\"UTF-8\" />\n    <link rel=\"icon\" type=\"image/svg+xml\" href=\"/vite.svg\" />\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\" />\n    <title>Shadcn Todo App</title>\n  </head>\n  <body class=\"bg-background text-foreground\">\n    <div id=\"root\"></div>\n    <script type=\"module\" src=\"/src/main.jsx\"></script>\n  </body>\n</html>\n",
+        "linesChanged": 13,
+        "changeType": "Generated"
+    },
+    {
+        "fileName": "vite.config.js",
+        "filePath": "shadcn-todo-app/vite.config.js",
+        "content": "import { defineConfig } from 'vite'\nimport react from '@vitejs/plugin-react'\nimport path from \"path\"\n\n// https://vitejs.dev/config/\nexport default defineConfig({\n  plugins: [react()],\n  resolve: {\n    alias: {\n      \"@\": path.resolve(__dirname, \"./src\"),\n    },\n  },\n})\n",
+        "linesChanged": 13,
+        "changeType": "Generated"
+    },
+    {
+        "fileName": "tailwind.config.js",
+        "filePath": "shadcn-todo-app/tailwind.config.js",
+        "content": "/** @type {import('tailwindcss').Config} */\nmodule.exports = {\n  darkMode: [\"class\"],\n  content: [\n    './pages/**/*.{js,jsx}',\n    './components/**/*.{js,jsx}',\n    './app/**/*.{js,jsx}',\n    './src/**/*.{js,jsx}',\n  ],\n  prefix: \"\",\n  theme: {\n    container: {\n      center: true,\n      padding: \"2rem\",\n      screens: {\n        \"2xl\": \"1400px\",\n      },\n    },\n    extend: {\n      colors: {\n        border: \"hsl(var(--border))\",\n        input: \"hsl(var(--input))\",\n        ring: \"hsl(var(--ring))\",\n        background: \"hsl(var(--background))\",\n        foreground: \"hsl(var(--foreground))\",\n        primary: {\n          DEFAULT: \"hsl(var(--primary))\",\n          foreground: \"hsl(var(--primary-foreground))\",\n        },\n        secondary: {\n          DEFAULT: \"hsl(var(--secondary))\",\n          foreground: \"hsl(var(--secondary-foreground))\",\n        },\n        destructive: {\n          DEFAULT: \"hsl(var(--destructive))\",\n          foreground: \"hsl(var(--destructive-foreground))\",\n        },\n        muted: {\n          DEFAULT: \"hsl(var(--muted))\",\n          foreground: \"hsl(var(--muted-foreground))\",\n        },\n        accent: {\n          DEFAULT: \"hsl(var(--accent))\",\n          foreground: \"hsl(var(--accent-foreground))\",\n        },\n        popover: {\n          DEFAULT: \"hsl(var(--popover))\",\n          foreground: \"hsl(var(--popover-foreground))\",\n        },\n        card: {\n          DEFAULT: \"hsl(var(--card))\",\n          foreground: \"hsl(var(--card-foreground))\",\n        },\n      },\n      borderRadius: {\n        lg: \"var(--radius)\",\n        md: \"calc(var(--radius) - 2px)\",\n        sm: \"calc(var(--radius) - 4px)\",\n      },\n      keyframes: {\n        \"accordion-down\": {\n          from: { height: \"0\" },\n          to: { height: \"var(--radix-accordion-content-height)\" },\n        },\n        \"accordion-up\": {\n          from: { height: \"var(--radix-accordion-content-height)\" },\n          to: { height: \"0\" },\n        },\n      },\n      animation: {\n        \"accordion-down\": \"accordion-down 0.2s ease-out\",\n        \"accordion-up\": \"accordion-up 0.2s ease-out\",\n      },\n    },\n  },\n  plugins: [require(\"tailwindcss-animate\")],\n}\n",
+        "linesChanged": 87,
+        "changeType": "Generated"
+    },
+    {
+        "fileName": "postcss.config.js",
+        "filePath": "shadcn-todo-app/postcss.config.js",
+        "content": "module.exports = {\n  plugins: {\n    tailwindcss: {},\n    autoprefixer: {},\n  },\n}\n",
+        "linesChanged": 6,
+        "changeType": "Generated"
+    },
+    {
+        "fileName": "main.jsx",
+        "filePath": "shadcn-todo-app/src/main.jsx",
+        "content": "import React from 'react'\nimport ReactDOM from 'react-dom/client'\nimport App from './App.jsx'\nimport './index.css'\n\nReactDOM.createRoot(document.getElementById('root')).render(\n  <React.StrictMode>\n    <App />\n  </React.StrictMode>,\n)\n",
+        "linesChanged": 10,
+        "changeType": "Generated"
+    },
+    {
+        "fileName": "index.css",
+        "filePath": "shadcn-todo-app/src/index.css",
+        "content": "@tailwind base;\n@tailwind components;\n@tailwind utilities;\n \n@layer base {\n  :root {\n    --background: 0 0% 100%;\n    --foreground: 222.2 84% 4.9%;\n \n    --card: 0 0% 100%;\n    --card-foreground: 222.2 84% 4.9%;\n \n    --popover: 0 0% 100%;\n    --popover-foreground: 222.2 84% 4.9%;\n \n    --primary: 222.2 47.4% 11.2%;\n    --primary-foreground: 210 40% 98%;\n \n    --secondary: 210 40% 96.1%;\n    --secondary-foreground: 222.2 47.4% 11.2%;\n \n    --muted: 210 40% 96.1%;\n    --muted-foreground: 215.4 16.3% 46.9%;\n \n    --accent: 210 40% 96.1%;\n    --accent-foreground: 222.2 47.4% 11.2%;\n \n    --destructive: 0 84.2% 60.2%;\n    --destructive-foreground: 210 40% 98%;\n\n    --border: 214.3 31.8% 91.4%;\n    --input: 214.3 31.8% 91.4%;\n    --ring: 222.2 84% 4.9%;\n \n    --radius: 0.5rem;\n  }\n \n  .dark {\n    --background: 222.2 84% 4.9%;\n    --foreground: 210 40% 98%;\n \n    --card: 222.2 84% 4.9%;\n    --card-foreground: 210 40% 98%;\n \n    --popover: 222.2 84% 4.9%;\n    --popover-foreground: 210 40% 98%;\n \n    --primary: 210 40% 98%;\n    --primary-foreground: 222.2 47.4% 11.2%;\n \n    --secondary: 217.2 32.6% 17.5%;\n    --secondary-foreground: 210 40% 98%;\n \n    --muted: 217.2 32.6% 17.5%;\n    --muted-foreground: 215 20.2% 65.1%;\n \n    --accent: 217.2 32.6% 17.5%;\n    --accent-foreground: 210 40% 98%;\n \n    --destructive: 0 62.8% 30.6%;\n    --destructive-foreground: 210 40% 98%;\n \n    --border: 217.2 32.6% 17.5%;\n    --input: 217.2 32.6% 17.5%;\n    --ring: 212.7 26.8% 83.9%;\n  }\n}\n \n@layer base {\n  * {\n    @apply border-border;\n  }\n  body {\n    @apply bg-background text-foreground;\n  }\n}\n",
+        "linesChanged": 84,
+        "changeType": "Generated"
+    },
+    {
+        "fileName": "App.jsx",
+        "filePath": "shadcn-todo-app/src/App.jsx",
+        "content": "import { useState } from 'react';\nimport { Button } from \"@/components/ui/button\";\nimport { Input } from \"@/components/ui/input\";\nimport { Checkbox } from \"@/components/ui/checkbox\";\nimport { Card, CardContent, CardHeader, CardTitle } from \"@/components/ui/card\";\nimport { Trash2 } from 'lucide-react';\n\nfunction App() {\n  const [todos, setTodos] = useState([]);\n  const [newTodo, setNewTodo] = useState('');\n\n  const handleAddTodo = (e) => {\n    e.preventDefault();\n    if (newTodo.trim() === '') return;\n    setTodos([...todos, { id: Date.now(), text: newTodo, completed: false }]);\n    setNewTodo('');\n  };\n\n  const handleToggleTodo = (id) => {\n    setTodos(\n      todos.map(todo =>\n        todo.id === id ? { ...todo, completed: !todo.completed } : todo\n      )\n    );\n  };\n\n  const handleDeleteTodo = (id) => {\n    setTodos(todos.filter(todo => todo.id !== id));\n  };\n\n  return (\n    <div className=\"min-h-screen w-full flex items-center justify-center bg-gray-100 dark:bg-gray-900 p-4\">\n      <Card className=\"w-full max-w-md\">\n        <CardHeader>\n          <CardTitle className=\"text-2xl font-bold text-center\">Todo List</CardTitle>\n        </CardHeader>\n        <CardContent>\n          <form onSubmit={handleAddTodo} className=\"flex gap-2 mb-4\">\n            <Input\n              type=\"text\"\n              placeholder=\"Add a new todo...\"\n              value={newTodo}\n              onChange={(e) => setNewTodo(e.target.value)}\n              className=\"flex-grow\"\n            />\n            <Button type=\"submit\">Add</Button>\n          </form>\n          <div className=\"space-y-2\">\n            {todos.map(todo => (\n              <div key={todo.id} className=\"flex items-center gap-3 p-2 border rounded-md\">\n                <Checkbox\n                  id={`todo-${todo.id}`}\n                  checked={todo.completed}\n                  onCheckedChange={() => handleToggleTodo(todo.id)}\n                />\n                <label \n                  htmlFor={`todo-${todo.id}`} \n                  className={`flex-grow cursor-pointer ${todo.completed ? 'line-through text-gray-500' : ''}`}>\n                  {todo.text}\n                </label>\n                <Button variant=\"ghost\" size=\"icon\" onClick={() => handleDeleteTodo(todo.id)}>\n                  <Trash2 className=\"h-4 w-4 text-red-500\" />\n                </Button>\n              </div>\n            ))}\n          </div>\n        </CardContent>\n      </Card>\n    </div>\n  );\n}\n\nexport default App;\n",
+        "linesChanged": 76,
+        "changeType": "Generated"
+    },
+    {
+        "fileName": "utils.js",
+        "filePath": "shadcn-todo-app/src/lib/utils.js",
+        "content": "import { clsx } from \"clsx\"\nimport { twMerge } from \"tailwind-merge\"\n \nexport function cn(...inputs) {\n  return twMerge(clsx(inputs))\n}\n",
+        "linesChanged": 6,
+        "changeType": "Generated"
+    },
+    {
+        "fileName": "button.jsx",
+        "filePath": "shadcn-todo-app/src/components/ui/button.jsx",
+        "content": "import * as React from \"react\"\nimport { Slot } from \"@radix-ui/react-slot\"\nimport { cva } from \"class-variance-authority\";\n\nimport { cn } from \"@/lib/utils\"\n\nconst buttonVariants = cva(\n  \"inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50\",\n  {\n    variants: {\n      variant: {\n        default: \"bg-primary text-primary-foreground hover:bg-primary/90\",\n        destructive:\n          \"bg-destructive text-destructive-foreground hover:bg-destructive/90\",\n        outline:\n          \"border border-input bg-background hover:bg-accent hover:text-accent-foreground\",\n        secondary:\n          \"bg-secondary text-secondary-foreground hover:bg-secondary/80\",\n        ghost: \"hover:bg-accent hover:text-accent-foreground\",\n        link: \"text-primary underline-offset-4 hover:underline\",\n      },\n      size: {\n        default: \"h-10 px-4 py-2\",\n        sm: \"h-9 rounded-md px-3\",\n        lg: \"h-11 rounded-md px-8\",\n        icon: \"h-10 w-10\",\n      },\n    },\n    defaultVariants: {\n      variant: \"default\",\n      size: \"default\",\n    },\n  }\n)\n\nconst Button = React.forwardRef(({ className, variant, size, asChild = false, ...props }, ref) => {\n  const Comp = asChild ? Slot : \"button\"\n  return (\n    <Comp\n      className={cn(buttonVariants({ variant, size, className }))}\n      ref={ref}\n      {...props} />\n  )\n})\nButton.displayName = \"Button\"\n\nexport { Button, buttonVariants }",
+        "linesChanged": 49,
+        "changeType": "Generated"
+    },
+    {
+        "fileName": "input.jsx",
+        "filePath": "shadcn-todo-app/src/components/ui/input.jsx",
+        "content": "import * as React from \"react\"\n\nimport { cn } from \"@/lib/utils\"\n\nconst Input = React.forwardRef(({ className, type, ...props }, ref) => {\n  return (\n    <input\n      type={type}\n      className={cn(\n        \"flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50\",\n        className\n      )}\n      ref={ref}\n      {...props} />\n  )\n})\nInput.displayName = \"Input\"\n\nexport { Input }",
+        "linesChanged": 20,
+        "changeType": "Generated"
+    },
+    {
+        "fileName": "checkbox.jsx",
+        "filePath": "shadcn-todo-app/src/components/ui/checkbox.jsx",
+        "content": "import * as React from \"react\"\nimport * as CheckboxPrimitive from \"@radix-ui/react-checkbox\"\nimport { Check } from \"lucide-react\"\n\nimport { cn } from \"@/lib/utils\"\n\nconst Checkbox = React.forwardRef(({ className, ...props }, ref) => (\n  <CheckboxPrimitive.Root\n    ref={ref}\n    className={cn(\n      \"peer h-4 w-4 shrink-0 rounded-sm border border-primary ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground\",\n      className\n    )}\n    {...props}>\n    <CheckboxPrimitive.Indicator className={cn(\"flex items-center justify-center text-current\")}>\n      <Check className=\"h-4 w-4\" />\n    </CheckboxPrimitive.Indicator>\n  </CheckboxPrimitive.Root>\n))\nCheckbox.displayName = CheckboxPrimitive.Root.displayName\n\nexport { Checkbox }",
+        "linesChanged": 24,
+        "changeType": "Generated"
+    },
+    {
+        "fileName": "card.jsx",
+        "filePath": "shadcn-todo-app/src/components/ui/card.jsx",
+        "content": "import * as React from \"react\"\n\nimport { cn } from \"@/lib/utils\"\n\nconst Card = React.forwardRef(({ className, ...props }, ref) => (\n  <div\n    ref={ref}\n    className={cn(\"rounded-lg border bg-card text-card-foreground shadow-sm\", className)}\n    {...props} />\n))\nCard.displayName = \"Card\"\n\nconst CardHeader = React.forwardRef(({ className, ...props }, ref) => (\n  <div\n    ref={ref}\n    className={cn(\"flex flex-col space-y-1.5 p-6\", className)}\n    {...props} />\n))\nCardHeader.displayName = \"CardHeader\"\n\nconst CardTitle = React.forwardRef(({ className, ...props }, ref) => (\n  <h3\n    ref={ref}\n    className={cn(\"text-2xl font-semibold leading-none tracking-tight\", className)}\n    {...props} />\n))\nCardTitle.displayName = \"CardTitle\"\n\nconst CardDescription = React.forwardRef(({ className, ...props }, ref) => (\n  <p\n    ref={ref}\n    className={cn(\"text-sm text-muted-foreground\", className)}\n    {...props} />\n))\nCardDescription.displayName = \"CardDescription\"\n\nconst CardContent = React.forwardRef(({ className, ...props }, ref) => (\n  <div ref={ref} className={cn(\"p-6 pt-0\", className)} {...props} />\n))\nCardContent.displayName = \"CardContent\"\n\nconst CardFooter = React.forwardRef(({ className, ...props }, ref) => (\n  <div\n    ref={ref}\n    className={cn(\"flex items-center p-6 pt-0\", className)}\n    {...props} />\n))\nCardFooter.displayName = \"CardFooter\"\n\nexport { Card, CardHeader, CardFooter, CardTitle, CardDescription, CardContent }",
+        "linesChanged": 58,
+        "changeType": "Generated"
+    },
+    {
+        "fileName": "label.jsx",
+        "filePath": "shadcn-todo-app/src/components/ui/label.jsx",
+        "content": "import * as React from \"react\"\nimport * as LabelPrimitive from \"@radix-ui/react-label\"\nimport { cva } from \"class-variance-authority\";\n\nimport { cn } from \"@/lib/utils\"\n\nconst labelVariants = cva(\n  \"text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70\"\n)\n\nconst Label = React.forwardRef(({ className, ...props }, ref) => (\n  <LabelPrimitive.Root\n    ref={ref}\n    className={cn(labelVariants(), className)}\n    {...props} />\n))\nLabel.displayName = LabelPrimitive.Root.displayName\n\nexport { Label }",
+        "linesChanged": 19,
+        "changeType": "Generated"
+    }
+]);
   const [currentStage, setCurrentStage] = useState(0);
   const [currentSubStage,setCurrentSubStage] = useState(0);
   const [sourceLanguage, setSourceLanguage] = useState("node.js");

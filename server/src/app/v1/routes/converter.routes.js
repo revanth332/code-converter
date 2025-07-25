@@ -1,5 +1,5 @@
 
-import { upload, convertCode, downloadCode,extractZip,updateCode,enhanceQuery } from '../controllers/converter.controller.js'
+import { upload, convertCode, downloadCode,extractZip,updateCode,enhanceQuery, applyCode,runCode, stopCode } from '../controllers/converter.controller.js'
 import express from 'express'
 const router = express.Router();
 
@@ -14,6 +14,15 @@ router.route('/update')
 
 router.route('/enhance')
     .post(enhanceQuery);
+
+router.route('/apply/local')
+    .post(applyCode);
+
+router.route('/code/run')
+    .post(runCode);
+
+router.route('/code/stop')
+    .get(stopCode);
 
 router.route('/convert/download')
     .post(downloadCode);
