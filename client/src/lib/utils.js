@@ -7,7 +7,6 @@ export function cn(...inputs) {
 
 export function parseFileStructure(files) {
   const structure = {}
-
   files.forEach((file) => {
     const pathParts = file.filePath.split("/")
     let currentLevel = structure

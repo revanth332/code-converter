@@ -5,7 +5,7 @@ import { join } from 'path';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
 import cors from 'cors'
-//file imports
+
 import config from "./config.js";
 import logger from './logger.js';
 import appv1 from './server/src/app/v1/app.v1.js';

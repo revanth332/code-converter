@@ -1,16 +1,11 @@
 
 const UpdateLoader = () => {
   return (
-    <div className="banter-loader">
-        <div className="banter-loader__box"></div>
-        <div className="banter-loader__box"></div>
-        <div className="banter-loader__box"></div>
-        <div className="banter-loader__box"></div>
-        <div className="banter-loader__box"></div>
-        <div className="banter-loader__box"></div>
-        <div className="banter-loader__box"></div>
-        <div className="banter-loader__box"></div>
-        <div className="banter-loader__box"></div>
+    <div className="container">
+      <span></span>
+      <span></span>
+      <span></span>
+      <span></span>
     </div>
   );
 }

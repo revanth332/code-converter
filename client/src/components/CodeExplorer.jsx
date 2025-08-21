@@ -41,7 +41,7 @@ function findLastPortInUse(logString) {
   return null;
 }
 
-export default function CodeExplorer({enhanceQuery,handleAiModel,currentVersion,versions,handleCurrentVersion,globalChatEnabled,setGlobalChatEnabled, files, setFiles, onBack,openFiles,setOpenFiles, messages,handleModificationRequest,activeFileId,setActiveFileId,modificationLoading }) {
+export default function CodeExplorer({handleUpload,showCodeExplorer,enhanceQuery,handleAiModel,currentVersion,versions,handleCurrentVersion,globalChatEnabled,setGlobalChatEnabled, files, setFiles, onBack,openFiles,setOpenFiles, messages,handleModificationRequest,activeFileId,setActiveFileId,modificationLoading }) {
   const fileStructure = parseFileStructure(files)
   const [hasChanges,setHasChanges] = useState(false);
   const [copied,setCopied] = useState(false);
@@ -51,8 +51,8 @@ export default function CodeExplorer({enhanceQuery,handleAiModel,currentVersion,
   const [codeRunLoading,setCodeRunLoading] = useState(false);
   const [isTerminalOpen,setIsTerminalOpen] = useState(false);
   const [terminalMessages,setTerminalMessages] = useState([]);
-  const eventSourceRef = useRef(null);
-  const terminalRef = useRef(null)
+  // const eventSourceRef = useRef(null);
+  // const terminalRef = useRef(null)
   const wsRef = useRef(null);
   const [runningPort,setRunningPort] = useState(null);
 
@@ -276,6 +276,7 @@ export default function CodeExplorer({enhanceQuery,handleAiModel,currentVersion,
     try{
      await axios.get("http://localhost:8001/v1/api/code/stop?port="+runningPort+"&folder="+files[0].filePath.split("/")[0]);
      setCodeRunning(false);
+     setDisplayType("code")
     }
     catch(err){
       console.log(err)
@@ -322,17 +323,18 @@ export default function CodeExplorer({enhanceQuery,handleAiModel,currentVersion,
 
       <div className="flex px-2 pb-2 gap-2 h-[94%] w-full">
         {/* Section 1: Chat Interface */}
-        <div className="w-96 flex-shrink-0 bg-white dark:bg-gray-800 border rounded-lg ">
-          <Card className="h-full border-0">
-            {/* <CardHeader className="pb-2">
-              <CardTitle className="text-lg">AI Assistant</CardTitle>
-            </CardHeader> */}
-            <CardContent className="p-0 h-full">
-              <ChatInterface enhanceQuery={enhanceQuery} handleAiModel={handleAiModel} globalChatEnabled ={globalChatEnabled} setGlobalChatEnabled={setGlobalChatEnabled} handleCurrentVersion={handleCurrentVersion} handleFileSelect={handleFileSelect} activeFileId={activeFileId} openFiles={openFiles} onModificationRequest={handleModificationRequest} messages={messages} />
-            </CardContent>
-          </Card>
-        </div>
-          <div className="flex-1 flex flex-col relative border rounded-lg overflow-hidden">
+        <div className={("flex-shrink-0 bg-white dark:bg-gray-800 border rounded-lg",showCodeExplorer ? "w-96" : "w-full")}>
+              <Card className="h-full border-0">
+                {/* <CardHeader className="pb-2">
+                  <CardTitle className="text-lg">AI Assistant</CardTitle>
+                </CardHeader> */}
+                <CardContent className="p-0 h-full">
+                  <ChatInterface handleUpload={handleUpload} showCodeExplorer={showCodeExplorer} enhanceQuery={enhanceQuery} handleAiModel={handleAiModel} globalChatEnabled ={globalChatEnabled} setGlobalChatEnabled={setGlobalChatEnabled} handleCurrentVersion={handleCurrentVersion} handleFileSelect={handleFileSelect} activeFileId={activeFileId} openFiles={openFiles} onModificationRequest={handleModificationRequest} messages={messages} />
+                </CardContent>
+              </Card>
+            </div>
+        
+        <div className={cn("relative border rounded-lg overflow-hidden",showCodeExplorer ? "flex-1 flex flex-col" : "hidden" )}>
             <div className="bg-white p-2 rounded-lg border-b rounded-e-none rounded-b-none flex justify-between border items-center">
               <div>
                   <button onClick={() => handleDisplayType("code")} className={cn("font-semibold text-sm mr-5 p-1 px-2 rounded-md", displayType === "code" && "bg-gray-100")}>Code</button>
@@ -371,14 +373,33 @@ export default function CodeExplorer({enhanceQuery,handleAiModel,currentVersion,
                 </div>
             </div>
             {
-            displayType === "code"
+            modificationLoading ? <div className="h-full relative bg-white w-full">
+                  <div className="rounded-lg absolute top-0 left-0 z-10 bg-white h-full w-full">
+                    <div className="flex items-center justify-center h-full flex-col">
+                      <div className="h-60 w-60 relative">
+                        <UpdateLoader />
+                      </div>
+                      <div className="w-full flex justify-center text-gray-900 font-semibold">
+                        Generating {openFiles.find((f) => f.filePath === activeFileId)?.filePath}
+                      </div>
+                    </div>
+                </div>
+                </div>
+             : displayType === "code"
               ? <div className="flex flex-1 h-[80%]">
-                {modificationLoading && <div className="rounded-lg absolute top-0 left-0 z-10 bg-white h-full w-full">
-                  <UpdateLoader />
-                  <div className="absolute top-[60%] w-full flex justify-center text-gray-900 font-semibold">
-                    Generating {openFiles.find((f) => f.filePath === activeFileId)?.filePath}
-                  </div>
-                </div>}
+                {modificationLoading && <div className="h-full relative bg-white bb w-full">
+                  <div className="rounded-lg absolute top-0 left-0 z-10 bg-white h-full w-full">
+                    <div className="flex items-center justify-center h-full flex-col">
+                      <div className="h-60 w-60 relative">
+                        <UpdateLoader />
+                      </div>
+                      <div className="w-full flex justify-center text-gray-900 font-semibold">
+                        Generating {openFiles.find((f) => f.filePath === activeFileId)?.filePath}
+                      </div>
+                    </div>
+                </div>
+                </div>
+                }
                 <div className="w-80  flex-shrink-0 bg-white border-r dark:bg-gray-800 rounded-lg">
                   <Card className="h-full rounded-r-none border-0 bg-gray-50">
          
@@ -410,8 +431,9 @@ export default function CodeExplorer({enhanceQuery,handleAiModel,currentVersion,
                   </Card>
                 </div>
               </div>
-            : <div className="flex flex-1 h-[80%]">
-                <iframe height={"100%"} width={"100%"} src={"http://localhost:"+runningPort} />
+            :  <div className="flex flex-1 h-[80%] relative">
+                {/* <div className="h-full w-full flex justify-center items-center bg-white"><Loader2 className="animate-spin h-10 w-10 text-gray-500 " /></div> */}
+                <iframe className="border" height={"100%"} width={"100%"} src={"http://localhost:"+runningPort} />
               </div>
             }
             {!isTerminalOpen
@@ -435,7 +457,7 @@ export default function CodeExplorer({enhanceQuery,handleAiModel,currentVersion,
                 {/* <p className="text-sm text-red-500 p-2 whitespace-pre">{terminalMessages}</p> */}
               </div>
               </div>}
-          </div>
+        </div>
       </div>
     </div>
   )

@@ -10,7 +10,7 @@ router.route('/convert')
     .post(convertCode);
 
 router.route('/update')
-    .post(updateCode);
+    .post(upload.single('file'),updateCode);
 
 router.route('/enhance')
     .post(enhanceQuery);
