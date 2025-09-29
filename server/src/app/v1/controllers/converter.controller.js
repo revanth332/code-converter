@@ -232,7 +232,7 @@ export async function updateCode(req,res) {
         ]
       })
     }
-    console.log(imageAnalysisResult.text);
+    // console.log(imageAnalysisResult.text);
     const parsedFiles = JSON.parse(files);
     const parsedMessages = [...JSON.parse(messages),{
             role : "user",
