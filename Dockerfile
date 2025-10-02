@@ -22,4 +22,4 @@ COPY --from=build-frontend /app/client/public ./public
 
 EXPOSE 8080
 
-CMD ["node", "server.js"]
+CMD ["node", "app.js"]
