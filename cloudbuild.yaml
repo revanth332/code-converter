@@ -25,7 +25,7 @@ steps:
       '--region', 'asia-south1',
       '--platform', 'managed',
       '--allow-unauthenticated',
-      '--set-secrets', 'GEMINI_API_KEY:GEMINI_API_KEY:latest'
+      '--set-secrets', 'GEMINI_API_KEY=GEMINI_API_KEY:latest'
     ]
 images:
   - 'asia-south1-docker.pkg.dev/leafy-outrider-472511-q9/code-converter/app:$COMMIT_SHA'
