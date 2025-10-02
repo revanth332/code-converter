@@ -12,9 +12,10 @@ RUN npm run build
 FROM node:20-slim
 
 WORKDIR /app/server
-COPY server/package.json server/package-lock.json ./
+COPY package.json package-lock.json ./
 RUN npm install
-COPY server/ ./
+COPY . ./ 
+RUN rm -rf ./client
 
 # Copy frontend build output into backend "build" directory
 COPY --from=build-frontend /app/client/dist ./dist
