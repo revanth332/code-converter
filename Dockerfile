@@ -18,7 +18,7 @@ COPY . ./
 RUN rm -rf ./client
 
 # Copy frontend build output into backend "build" directory
-COPY --from=build-frontend /app/client/public ./public
+COPY --from=build-frontend /app/public ./public
 
 EXPOSE 8080
 

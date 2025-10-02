@@ -14,6 +14,7 @@ dist-ssr
 .env
 dist
 lint-report.html
+public
 
 # Editor directories and files
 .vscode/*
