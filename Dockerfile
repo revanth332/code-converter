@@ -20,6 +20,6 @@ RUN rm -rf ./client
 # Copy frontend build output into backend "build" directory
 COPY --from=build-frontend /app/client/public ./public
 
-EXPOSE 3000
+EXPOSE 8080
 
 CMD ["node", "server.js"]
