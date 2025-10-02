@@ -18,7 +18,7 @@ COPY . ./
 RUN rm -rf ./client
 
 # Copy frontend build output into backend "build" directory
-COPY --from=build-frontend /app/client/dist ./dist
+COPY --from=build-frontend /app/client/public ./public
 
 EXPOSE 3000
 
