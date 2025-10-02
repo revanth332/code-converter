@@ -16,6 +16,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { SERVER_URL } from "@/App"
 // import { ThemeToggle } from "@/components/theme-toggle"
 
 // interface CodeExplorerProps {
@@ -168,7 +169,7 @@ export default function CodeExplorer({handleUpload,showCodeExplorer,enhanceQuery
 
   const handleDownloadCode = async () => {
     try{
-      const response = await axios.post('http://localhost:8001/v1/api/convert/download', {files},{
+      const response = await axios.post(SERVER_URL+'/v1/api/convert/download', {files},{
         responseType: 'blob', // Important: Set the response type to 'blob'
       });
       console.log(response);
@@ -190,7 +191,7 @@ export default function CodeExplorer({handleUpload,showCodeExplorer,enhanceQuery
 
   const applyCodeLocal = async () => {
     try{
-      await axios.post('http://localhost:8001/v1/api/apply/local', {files});
+      await axios.post(SERVER_URL+'/v1/api/apply/local', {files});
     }
     catch(err){
       console.log(err)
@@ -263,7 +264,7 @@ export default function CodeExplorer({handleUpload,showCodeExplorer,enhanceQuery
   try {
     setIsTerminalOpen(true);
     setCodeRunLoading(true);
-    await axios.post('http://localhost:8001/v1/api/code/run', { folder: files[0].filePath.split("/")[0] });
+    await axios.post(SERVER_URL+'/v1/api/code/run', { folder: files[0].filePath.split("/")[0] });
     // Output will come via WebSocket
   } catch (err) {
     console.log(err);
@@ -274,7 +275,7 @@ export default function CodeExplorer({handleUpload,showCodeExplorer,enhanceQuery
 
    const handleStopCode = async () => {
     try{
-     await axios.get("http://localhost:8001/v1/api/code/stop?port="+runningPort+"&folder="+files[0].filePath.split("/")[0]);
+     await axios.get(SERVER_URL+"/v1/api/code/stop?port="+runningPort+"&folder="+files[0].filePath.split("/")[0]);
      setCodeRunning(false);
      setDisplayType("code")
     }

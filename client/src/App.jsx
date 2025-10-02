@@ -3,6 +3,8 @@ import { cn, createDependencyTree, getDependenciesForFile } from "@/lib/utils";
 import CodeExplorer from "./components/CodeExplorer";
 import axios from "axios";
 import { toast } from "sonner";
+export const SERVER_URL = window.location.origin;
+// export const SERVER_URL = "http://localhost:8001";
 
 export default function CodeConverter() {
   const [file, setFile] = useState(null);
@@ -132,7 +134,7 @@ export default function CodeConverter() {
         const formData = new FormData();
         formData.append("file", uploadedFile);
         const extractResponse = await axios.post(
-          "http://localhost:8001/v1/api/extract",
+          SERVER_URL+"/v1/api/extract",
           formData,
           {
             headers: {
@@ -317,7 +319,7 @@ export default function CodeConverter() {
       formData.append("inputQuery",inputValue);
 
       const updationResponse = await axios.post(
-        "http://localhost:8001/v1/api/update",
+        SERVER_URL+"/v1/api/update",
         formData,
         {
           headers: {
